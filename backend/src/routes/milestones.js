@@ -1,0 +1,20 @@
+const express = require('express');
+const router = express.Router();
+const { authenticate, isAdmin } = require('../middleware/auth');
+const { validateMilestone } = require('../utils/validators');
+const { create, getById, getByCampaign, updateStatus } = require('../controllers/milestoneController');
+
+// Get milestones by campaign (public)
+router.get('/campaign/:campaignId', getByCampaign);
+
+// Get milestone by ID (public)
+router.get('/:milestoneId', getById);
+
+// Create milestone (authenticated - NGO or Admin)
+router.post('/', authenticate, validateMilestone, create);
+
+// Update milestone status (Admin only)
+router.patch('/:milestoneId/status', authenticate, isAdmin, updateStatus);
+
+module.exports = router;
+
