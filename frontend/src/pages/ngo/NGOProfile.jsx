@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI, uploadAPI } from '../../utils/api';
 import NGOLayout from '../../components/NGOLayout';
-import { Upload, FileText, CheckCircle2, AlertCircle, Clock, X } from 'lucide-react';
+import { Upload, FileText, X } from 'lucide-react';
 
 const NGOProfile = () => {
   const { user, fetchUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState('ACTION_REQUIRED');
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -21,8 +20,6 @@ const NGOProfile = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    // Always fetch fresh status from backend to ensure we have the latest
-    fetchVerificationStatus();
   }, [user]);
 
   useEffect(() => {
@@ -34,74 +31,6 @@ const NGOProfile = () => {
       });
     }
   }, [user]);
-
-  const fetchVerificationStatus = async (skipIfPending = false) => {
-    try {
-      // Check localStorage for recent upload timestamp
-      const recentUploadTime = localStorage.getItem('ngo_verification_upload_time');
-      const recentUpload = recentUploadTime && (Date.now() - parseInt(recentUploadTime)) < 30000; // 30 seconds
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/users?role=NGO&limit=1000`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      if (data.success && data.data?.users) {
-        const ngoUser = data.data.users.find(u => u.user_id === user?.user_id || u.user_id === user?.id);
-        if (ngoUser) {
-          const status = ngoUser.verification_status;
-          // If status is null, undefined, or empty, it means ACTION_REQUIRED (no documents uploaded)
-          // Only show PENDING if status is explicitly 'PENDING' (meaning documents were uploaded)
-          if (!status || status === null || status === undefined || status === '') {
-            // Set ACTION_REQUIRED, but don't downgrade if we just uploaded or have recent upload
-            setVerificationStatus(current => {
-              if ((skipIfPending || recentUpload) && current === 'PENDING') {
-                return current; // Don't downgrade after upload
-              }
-              return 'ACTION_REQUIRED'; // No documents uploaded
-            });
-          } else {
-            // Always update if we got a valid status from backend (PENDING, APPROVED, REJECTED)
-            setVerificationStatus(status);
-            // Update localStorage with the latest status
-            localStorage.setItem('ngo_verification_status', status);
-            // Clear upload timestamp if we got a valid status
-            if (status === 'PENDING' || status === 'APPROVED' || status === 'REJECTED') {
-              localStorage.removeItem('ngo_verification_upload_time');
-            }
-          }
-        } else {
-          // User not found - set ACTION_REQUIRED unless we just uploaded
-          setVerificationStatus(current => {
-            if ((skipIfPending || recentUpload) && current === 'PENDING') {
-              return current;
-            }
-            return 'ACTION_REQUIRED';
-          });
-        }
-      } else {
-        // API call failed - only set ACTION_REQUIRED if not PENDING
-        setVerificationStatus(current => {
-          if ((skipIfPending || recentUpload) && current === 'PENDING') {
-            return current;
-          }
-          return 'ACTION_REQUIRED';
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching verification status:', error);
-      // On error, only set ACTION_REQUIRED if not PENDING
-      const recentUploadTime = localStorage.getItem('ngo_verification_upload_time');
-      const recentUpload = recentUploadTime && (Date.now() - parseInt(recentUploadTime)) < 30000;
-      setVerificationStatus(current => {
-        if ((skipIfPending || recentUpload) && current === 'PENDING') {
-          return current;
-        }
-        return 'ACTION_REQUIRED';
-      });
-    }
-  };
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -159,8 +88,6 @@ const NGOProfile = () => {
         // Use status from response if available, otherwise default to PENDING
         const newStatus = response.data?.status || 'PENDING';
         // Immediately set status to PENDING - don't refetch yet as DB might not be updated
-        setVerificationStatus(newStatus);
-        
         // Store in localStorage to persist across navigation
         localStorage.setItem('ngo_verification_status', newStatus);
         localStorage.setItem('ngo_verification_upload_time', Date.now().toString());
@@ -168,11 +95,6 @@ const NGOProfile = () => {
         // Dispatch event to notify NGOLayout and NGODashboard to refresh their status
         window.dispatchEvent(new CustomEvent('verificationStatusUpdated', { detail: { status: newStatus } }));
         
-        // Wait longer for database to commit and propagate, then refetch to ensure consistency
-        // Use skipIfPending=true to prevent downgrading from PENDING to ACTION_REQUIRED
-        setTimeout(async () => {
-          await fetchVerificationStatus(true);
-        }, 2000);
       } else {
         setMessage({ type: 'error', text: response.message || 'Failed to upload document' });
       }

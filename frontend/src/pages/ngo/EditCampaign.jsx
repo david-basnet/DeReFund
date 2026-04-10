@@ -20,6 +20,10 @@ const EditCampaign = () => {
   });
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -103,10 +107,6 @@ const EditCampaign = () => {
       </Layout>
     );
   }
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   return (
     <Layout>

@@ -9,7 +9,6 @@ const DonorPage = () => {
   const { user } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [myDonations, setMyDonations] = useState([]);
-  const [totalDonated, setTotalDonated] = useState(0);
   const [stats, setStats] = useState({
     totalDonated: 0,
     totalDonations: 0,
@@ -47,7 +46,6 @@ const DonorPage = () => {
           totalDonations: donationsArray.length,
           campaignsSupported: campaignsSupported,
         });
-        setTotalDonated(total);
       } catch (error) {
         console.error('Error fetching data:', error);
       }

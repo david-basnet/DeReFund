@@ -3,6 +3,7 @@ import { authAPI } from '../utils/api';
 
 const AuthContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -45,30 +46,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (credentials) => {
-    try {
-      const response = await authAPI.login(credentials);
-      localStorage.setItem('token', response.data.token);
-      // Set user immediately from login response
-      if (response.data?.user) {
-        setUser(response.data.user);
-      }
-      // Also fetch full profile to ensure we have all data
-      await fetchUserProfile();
-      return response;
-    } catch (error) {
-      throw error;
+    const response = await authAPI.login(credentials);
+    localStorage.setItem('token', response.data.token);
+    // Set user immediately from login response
+    if (response.data?.user) {
+      setUser(response.data.user);
     }
+    // Also fetch full profile to ensure we have all data
+    await fetchUserProfile();
+    return response;
   };
 
   const register = async (userData) => {
-    try {
-      const response = await authAPI.register(userData);
-      localStorage.setItem('token', response.data.token);
-      await fetchUserProfile();
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await authAPI.register(userData);
+    localStorage.setItem('token', response.data.token);
+    await fetchUserProfile();
+    return response;
   };
 
   const logout = () => {

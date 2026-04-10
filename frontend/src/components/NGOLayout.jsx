@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 const NGOLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -43,7 +43,6 @@ const NGOLayout = ({ children }) => {
 
   // Check verification status
   const [verificationStatus, setVerificationStatus] = useState('ACTION_REQUIRED');
-  const [hasDocuments, setHasDocuments] = useState(false);
   const [showRejectionNotification, setShowRejectionNotification] = useState(false);
   const [hasCheckedNotification, setHasCheckedNotification] = useState(false);
   
@@ -65,7 +64,6 @@ const NGOLayout = ({ children }) => {
           if (ngoUser) {
             // If verification_status exists, documents have been uploaded
             const status = ngoUser.verification_status;
-            setHasDocuments(status !== null && status !== undefined && status !== '');
             // If status is null, undefined, or empty, it means ACTION_REQUIRED (no documents uploaded)
             // Only show PENDING if status is explicitly 'PENDING' (meaning documents were uploaded)
             if (!status || status === null || status === undefined || status === '') {
@@ -100,7 +98,6 @@ const NGOLayout = ({ children }) => {
               }
               return 'ACTION_REQUIRED';
             });
-            setHasDocuments(false);
           }
         } else {
           // If API call fails or no users found, only default to ACTION_REQUIRED if not PENDING
@@ -110,7 +107,6 @@ const NGOLayout = ({ children }) => {
             }
             return 'ACTION_REQUIRED';
           });
-          setHasDocuments(false);
         }
       } catch (error) {
         console.error('Error fetching verification status:', error);
@@ -123,7 +119,6 @@ const NGOLayout = ({ children }) => {
           }
           return 'ACTION_REQUIRED';
         });
-        setHasDocuments(false);
       }
     };
     
@@ -138,7 +133,6 @@ const NGOLayout = ({ children }) => {
       if (status === 'PENDING') {
         // Immediately update to PENDING when document is uploaded
         setVerificationStatus('PENDING');
-        setHasDocuments(true);
         localStorage.setItem('ngo_verification_status', 'PENDING');
         localStorage.setItem('ngo_verification_upload_time', Date.now().toString());
         // Then refetch after delay to ensure consistency, but don't downgrade

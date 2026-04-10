@@ -58,12 +58,23 @@ const getAllDisasterCases = async (page = 1, limit = 10, status = null, severity
   params.push(limit, offset);
 
   const result = await pool.query(query, params);
-  
-  const countQuery = `
-    SELECT COUNT(*) FROM disaster_cases 
-    WHERE 1=1 ${status ? `AND status = '${status}'` : ''} ${severity ? `AND severity = '${severity}'` : ''}
-  `;
-  const countResult = await pool.query(countQuery);
+
+  let countQuery = 'SELECT COUNT(*) FROM disaster_cases WHERE 1=1';
+  const countParams = [];
+  let countParamCount = 1;
+
+  if (status) {
+    countQuery += ` AND status = $${countParamCount}`;
+    countParams.push(status);
+    countParamCount++;
+  }
+
+  if (severity) {
+    countQuery += ` AND severity = $${countParamCount}`;
+    countParams.push(severity);
+  }
+
+  const countResult = await pool.query(countQuery, countParams);
 
   return {
     disasters: result.rows,

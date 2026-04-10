@@ -21,14 +21,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     const userRole = (user.role || user.user_role || user.userRole || '').toUpperCase();
     const requiredRoleUpper = requiredRole.toUpperCase();
     
-    // Allow DONOR role to access donor routes (handle both DONOR and donor)
     if (userRole !== requiredRoleUpper) {
-      // Special case: if required is DONOR and user role is empty/undefined but user exists, allow access
-      // This handles cases where role might not be in the response
-      if (requiredRoleUpper === 'DONOR' && !userRole && user) {
-        // Allow access if user exists (they're logged in)
-        return children;
-      }
       return <Navigate to="/" replace />;
     }
   }

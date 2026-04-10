@@ -10,7 +10,7 @@ const ReportDisaster = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
-  const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingImages] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
@@ -118,32 +118,6 @@ const ReportDisaster = () => {
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
-  };
-
-  const uploadImagesToServer = async () => {
-    if (uploadedFiles.length === 0) return [];
-
-    setUploadingImages(true);
-    try {
-      const formData = new FormData();
-      uploadedFiles.forEach((fileObj) => {
-        formData.append('images', fileObj.file);
-      });
-
-      const response = await uploadAPI.uploadDisasterImages(formData);
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to upload images');
-      }
-
-      // For now, we'll create the disaster first, then upload images
-      // Return empty array as images will be uploaded after disaster creation
-      return [];
-    } catch (err) {
-      throw new Error(err.message || 'Failed to upload images');
-    } finally {
-      setUploadingImages(false);
-    }
   };
 
   const handleSubmit = async (e) => {

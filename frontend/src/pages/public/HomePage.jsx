@@ -1,576 +1,499 @@
-import { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { motion } from 'framer-motion';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import homepageVideo from '../../assets/videos/homepage.mp4';
-import './HomePage.css';
-
-gsap.registerPlugin(ScrollTrigger);
-
-const AnimatedText = ({ children, isVisible }) => {
-  return (
-    <div className="text-center relative">
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={isVisible ? { y: 0, opacity: 1 } : { y: 100, opacity: 0 }}
-        transition={{
-          duration: 0.3,
-          ease: "easeOut"
-        }}
-      >
-        {children}
-      </motion.div>
-    </div>
-  )
-}
+import { useEffect } from 'react';
 
 const HomePage = () => {
-  const location = useLocation();
-  
-  // Text Reveal refs
-  const sectionStickRef = useRef(null);
-  const opacityRevealRef = useRef(null);
-  
-  // Text Change refs
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const containerRef = useRef(null);
-  const currentIndexRef = useRef(0);
-  const videoRef = useRef(null);
-  
-  // Scroll to top on mount
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
   }, []);
-  
-  // Aggressive cleanup on route change - runs synchronously before React unmounts
-  useLayoutEffect(() => {
-    return () => {
-      // Synchronous cleanup before React unmounts
-      try {
-        // Kill all ScrollTriggers first
-        const triggers = ScrollTrigger.getAll();
-        triggers.forEach(trigger => {
-          try {
-            // Disable pinning before killing
-            if (trigger.vars && trigger.vars.pin) {
-              trigger.disable();
-            }
-            trigger.kill(true);
-          } catch (e) {}
-        });
-        
-        // Unwrap all pin-spacers synchronously
-        const pinSpacers = Array.from(document.querySelectorAll('.pin-spacer'));
-        pinSpacers.forEach(spacer => {
-          try {
-            const parent = spacer.parentNode;
-            if (parent && spacer.firstElementChild) {
-              // Move the original content back to parent
-              while (spacer.firstChild) {
-                parent.insertBefore(spacer.firstChild, spacer);
-              }
-              // Remove the spacer
-              parent.removeChild(spacer);
-            } else if (parent) {
-              parent.removeChild(spacer);
-            }
-          } catch (e) {
-            // If unwrapping fails, just remove it
-            try {
-              if (spacer.parentNode) {
-                spacer.parentNode.removeChild(spacer);
-              }
-            } catch (e2) {}
-          }
-        });
-        
-        // Clear all GSAP transforms
-        ScrollTrigger.refresh();
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-    };
-  }, [location.pathname]);
-
-  const texts = [
-    "Every Donation Matters",
-    "Ensure Transparency",
-    "Building Trust"
-  ];
-
-  // Video autoplay
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(err => {
-        console.log('Video autoplay prevented:', err);
-      });
-    }
-  }, []);
-
-  // Text Reveal Animation
-  useEffect(() => {
-    let isMounted = true;
-    let scrollTriggerInstance = null;
-    let timelineInstance = null;
-
-    const initAnimations = () => {
-      if (!isMounted || !opacityRevealRef.current || !sectionStickRef.current) return;
-
-      try {
-        const text = opacityRevealRef.current.textContent || '';
-        const words = text.split(' ');
-        opacityRevealRef.current.textContent = '';
-        opacityRevealRef.current.style.display = 'inline-block';
-        
-        words.forEach((word, wordIndex) => {
-          if (!isMounted || !opacityRevealRef.current) return;
-          
-          const wordWrapper = document.createElement('span');
-          wordWrapper.style.display = 'inline-block';
-          wordWrapper.style.whiteSpace = 'nowrap';
-          
-          const chars = word.split('').map((char) => {
-            const span = document.createElement('span');
-            span.style.display = 'inline-block';
-            span.textContent = char;
-            span.style.fontSize = '';
-            return span;
-          });
-          
-          chars.forEach(char => wordWrapper.appendChild(char));
-          
-          if (opacityRevealRef.current) {
-            opacityRevealRef.current.appendChild(wordWrapper);
-          }
-          
-          if (wordIndex < words.length - 1 && opacityRevealRef.current) {
-            const space = document.createElement('span');
-            space.style.display = 'inline-block';
-            space.textContent = '\u00A0';
-            space.style.width = '0.5em';
-            opacityRevealRef.current.appendChild(space);
-          }
-        });
-        
-        if (!isMounted || !opacityRevealRef.current || !sectionStickRef.current) return;
-        
-        const allChars = Array.from(opacityRevealRef.current.querySelectorAll('span span'));
-        gsap.set(allChars, { opacity: 0.2 });
-
-        timelineInstance = gsap.timeline({
-          scrollTrigger: {
-            trigger: sectionStickRef.current,
-            pin: true,
-            pinSpacing: true,
-            start: "center center",
-            end: "+=1500",
-            scrub: 1,
-            onLeave: () => {
-              // Cleanup pin-spacer when leaving
-              setTimeout(() => {
-                const pinSpacers = document.querySelectorAll('.pin-spacer');
-                pinSpacers.forEach(spacer => {
-                  try {
-                    if (spacer.firstElementChild && spacer.parentNode) {
-                      const content = spacer.firstElementChild;
-                      spacer.parentNode.insertBefore(content, spacer);
-                      spacer.remove();
-                    }
-                  } catch (e) {}
-                });
-              }, 100);
-            }
-          }
-        });
-
-        scrollTriggerInstance = timelineInstance.scrollTrigger;
-
-        timelineInstance.to(allChars, {
-          opacity: 1,
-          duration: 1,
-          ease: "none",
-          stagger: 0.02
-        })
-        .to({}, { duration: 10 })
-        .to(opacityRevealRef.current, {
-          opacity: 0,
-          scale: 1.2,
-          duration: 50
-        });
-      } catch (error) {
-        console.error('Animation initialization error:', error);
-      }
-    };
-
-    const timer = setTimeout(initAnimations, 50);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-      
-      try {
-        // Kill timeline and scroll trigger instances first
-        if (timelineInstance) {
-          timelineInstance.kill();
-          timelineInstance = null;
-        }
-        if (scrollTriggerInstance) {
-          scrollTriggerInstance.kill(true);
-          scrollTriggerInstance = null;
-        }
-        
-        // Kill all ScrollTriggers
-        const triggers = ScrollTrigger.getAll();
-        triggers.forEach(trigger => {
-          try {
-            trigger.kill(true);
-          } catch (e) {
-            // Ignore errors
-          }
-        });
-        
-        // Remove all pin-spacer elements created by GSAP - synchronous unwrap
-        try {
-          const pinSpacers = Array.from(document.querySelectorAll('.pin-spacer'));
-          pinSpacers.forEach(spacer => {
-            try {
-              const parent = spacer.parentNode;
-              if (parent && spacer.firstElementChild) {
-                // Unwrap: move children back to parent
-                while (spacer.firstChild) {
-                  parent.insertBefore(spacer.firstChild, spacer);
-                }
-                parent.removeChild(spacer);
-              } else if (parent) {
-                parent.removeChild(spacer);
-              }
-            } catch (e) {
-              try {
-                if (spacer.parentNode) {
-                  spacer.parentNode.removeChild(spacer);
-                }
-              } catch (e2) {}
-            }
-          });
-        } catch (e) {
-          // Ignore errors
-        }
-        
-        // Clear GSAP styles from elements
-        if (sectionStickRef.current && sectionStickRef.current.isConnected) {
-          gsap.set(sectionStickRef.current, { clearProps: 'all' });
-        }
-        if (opacityRevealRef.current && opacityRevealRef.current.isConnected) {
-          gsap.set(opacityRevealRef.current, { clearProps: 'all' });
-        }
-      } catch (e) {
-        // Ignore errors
-      }
-    };
-  }, []);
-
-  // Text Change Scroll Handler
-  useEffect(() => {
-    let isMounted = true;
-
-    const handleScroll = () => {
-      if (!isMounted || !containerRef.current) return;
-
-      try {
-        const rect = containerRef.current.getBoundingClientRect();
-        const windowHeight = window.innerHeight;
-        const containerHeight = containerRef.current.offsetHeight;
-
-        const scrollProgress = Math.max(0, Math.min(1,
-          (windowHeight - rect.top) / (windowHeight + containerHeight)
-        ));
-
-        let newIndex = 0;
-        if (scrollProgress < 0.40) {
-          newIndex = 0;
-        } else if (scrollProgress < 0.60) {
-          newIndex = 1;
-        } else {
-          newIndex = 2;
-        }
-
-        if (newIndex !== currentIndexRef.current && isMounted) {
-          currentIndexRef.current = newIndex;
-          setCurrentIndex(newIndex);
-        }
-      } catch (error) {
-        console.error('Scroll handler error:', error);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-
-    return () => {
-      isMounted = false;
-      try {
-        window.removeEventListener('scroll', handleScroll);
-      } catch (e) {
-        // Ignore errors
-      }
-    };
-  }, []);
-
-  const campaigns = [
-    {
-      image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&q=80",
-      title: "Emergency Relief Fund",
-      description: "Providing immediate aid to communities affected by natural disasters with food, shelter, and medical supplies.",
-      raised: 45200,
-      goal: 80000,
-      color: "blue"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1593113616828-c4b682208f64?w=600&q=80",
-      title: "Rebuilding Communities",
-      description: "Supporting families rebuild their homes and lives after devastating floods and earthquakes with construction materials and skilled labor.",
-      raised: 67800,
-      goal: 120000,
-      color: "green"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=600&q=80",
-      title: "Medical Aid Program",
-      description: "Delivering essential medical supplies and healthcare services to disaster-stricken areas where medical facilities have been damaged or destroyed.",
-      raised: 92400,
-      goal: 150000,
-      color: "purple"
-    }
-  ];
-
-  const getColorClasses = (color) => {
-    const colors = {
-      blue: { bg: 'bg-blue-600', hover: 'hover:bg-blue-700', progress: 'bg-blue-600' },
-      green: { bg: 'bg-green-600', hover: 'hover:bg-green-700', progress: 'bg-green-600' },
-      purple: { bg: 'bg-purple-600', hover: 'hover:bg-purple-700', progress: 'bg-purple-600' }
-    };
-    return colors[color] || colors.blue;
-  };
 
   return (
-    <>
-      <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative h-screen overflow-hidden pt-24">
-        <div className="relative w-full h-full">
-          <video
-            ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover z-0"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-          >
-            <source src={homepageVideo} type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-black/30 z-[1]"></div>
-        </div>
-      </section>
-
-      {/* Text Reveal Section */}
-      <section ref={sectionStickRef} className="section-stick min-h-screen bg-black flex justify-center items-center text-white relative">
-        <p ref={opacityRevealRef} className="opacity-reveal text-xl sm:text-2xl md:text-3xl lg:text-4xl font-dmsans tracking-wide px-8 text-center max-w-6xl mx-auto leading-relaxed">
-          We ensure accountability: track every donation, verify every milestone, and guarantee funds reach disaster victims
-        </p>
-      </section>
-
-      {/* Text Change Section */}
-      <div className='w-full h-[300vh] relative'>
-        <div
-          ref={containerRef}
-          className='bg-white h-[300vh] w-full relative'
-        >
-          <div className='sticky top-0 h-screen w-full flex items-center justify-center text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-playfair text-dark-green'>
-            <div className="text-center relative w-full px-8 md:px-16 lg:px-24">
-              {texts.map((text, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 flex items-center justify-center ${currentIndex === index ? 'opacity-100' : 'opacity-0'
-                    }`}
-                >
-                  <AnimatedText isVisible={currentIndex === index}>
-                    {text}
-                  </AnimatedText>
-                </div>
-              ))}
+    <div className="bg-surface text-on-surface antialiased">
+      {/* TopNavBar (exact Stitch layout) */}
+      <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm">
+        <div className="flex justify-between items-center px-6 py-4 max-w-screen-2xl mx-auto">
+          <div className="flex items-center gap-8">
+            <span className="text-2xl font-black tracking-tighter text-blue-700 dark:text-blue-400">
+              DeReFund
+            </span>
+            <div className="hidden md:flex gap-6 items-center">
+              <a className="font-sans text-sm font-medium text-blue-700 dark:text-blue-400 border-b-2 border-blue-700 dark:border-blue-400 pb-1">
+                Browse
+              </a>
+              <a className="font-sans text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 transition-colors">
+                Disasters
+              </a>
+              <a className="font-sans text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 transition-colors">
+                About Us
+              </a>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Welcome Section */}
-      <section className="py-20 px-6 bg-gradient-to-br from-light-gray via-white to-light-purple/5 relative">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <h2 className="text-5xl font-semibold text-dark-green text-center mb-16 font-playfair tracking-tight">Welcome to DeReFund</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center p-6 bg-white rounded-2xl border-2 border-gray-100 hover:border-purple hover:shadow-xl transition-all hover-lift">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-purple to-light-purple rounded-full flex items-center justify-center shadow-md">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Make a Donation</h3>
-              <p className="text-gray-600">Support disaster relief campaigns with transparent, blockchain-tracked donations</p>
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center bg-surface-container-high px-3 py-1.5 rounded-lg mr-2">
+              <span className="material-symbols-outlined text-outline text-sm mr-2">search</span>
+              <input
+                className="bg-transparent border-none focus:ring-0 text-sm w-48"
+                placeholder="Search relief efforts..."
+                type="text"
+              />
             </div>
-            <div className="text-center p-6 bg-white rounded-2xl border-2 border-gray-100 hover:border-dark-green hover:shadow-xl transition-all hover-lift">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-dark-green to-primary-400 rounded-full flex items-center justify-center shadow-md">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Track Impact</h3>
-              <p className="text-gray-600">Monitor how your donations are used through verified milestones and proof</p>
-            </div>
-            <div className="text-center p-6 bg-white rounded-2xl border-2 border-gray-100 hover:border-light-purple hover:shadow-xl transition-all hover-lift">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-light-purple to-purple rounded-full flex items-center justify-center shadow-md">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Report Disaster</h3>
-              <p className="text-gray-600">NGOs can report disasters and create campaigns for verified relief efforts</p>
-            </div>
-            <div className="text-center p-6 bg-white rounded-2xl border-2 border-gray-100 hover:border-primary-400 hover:shadow-xl transition-all hover-lift">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary-400 to-dark-green rounded-full flex items-center justify-center shadow-md">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Blockchain Verified</h3>
-              <p className="text-gray-600">Every transaction is recorded on-chain for complete transparency and trust</p>
-            </div>
+            <button className="hidden lg:block font-sans text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors px-4 py-2 rounded-md active:scale-95 duration-150">
+              Sign In
+            </button>
+            <button className="primary-gradient text-white px-5 py-2.5 rounded-md text-sm font-bold active:scale-95 duration-150 shadow-md">
+              Donate Now
+            </button>
+            <button className="p-2 text-slate-600">
+              <span className="material-symbols-outlined">notifications</span>
+            </button>
           </div>
         </div>
-      </section>
+        <div className="bg-slate-100 dark:bg-slate-800 h-px w-full" />
+      </nav>
 
-      {/* Story Section */}
-      <section className="py-20 px-6 bg-gradient-to-br from-white via-light-gray to-gray-100 relative">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&q=80" 
-                  alt="Disaster relief team" 
-                  className="w-full rounded-2xl shadow-2xl border-4 border-dark-green"
+      <main className="pt-20">
+        {/* Hero Section */}
+        <section className="relative min-h-[870px] flex items-center overflow-hidden bg-surface">
+          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+            <div className="lg:col-span-6">
+              <span className="inline-block bg-tertiary-container text-white px-3 py-1 rounded-sm text-[10px] font-bold tracking-widest uppercase mb-6">
+                Active Emergency Response
+              </span>
+              <h1 className="text-6xl md:text-7xl font-extrabold tracking-tighter text-on-surface mb-6 leading-[0.95]">
+                Rebuilding <span className="text-primary">Communities</span> Together.
+              </h1>
+              <p className="text-lg text-on-surface-variant leading-relaxed mb-10 max-w-xl">
+                A decentralized humanitarian engine designed to deliver direct financial relief to disaster zones with
+                radical transparency and verified impact.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <button className="primary-gradient text-on-primary px-8 py-4 rounded-md font-bold text-lg shadow-ambient hover:-translate-y-0.5 transition-transform">
+                  Donate Now
+                </button>
+                <button className="bg-surface-container-highest text-on-surface px-8 py-4 rounded-md font-bold text-lg hover:bg-surface-dim transition-colors">
+                  Join as NGO
+                </button>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6 relative">
+              <div className="relative w-full aspect-square rounded-full overflow-hidden shadow-2xl border-8 border-white/20">
+                <img
+                  className="w-full h-full object-cover"
+                  alt="Volunteers handing out food and supplies in a recovering community"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXTujlp-478kv2ATlvifAn-h6keT0huSM6HljYFNWqrnyv1DP2h-IVbIV9CqO3nWOONz8Fo7MUvinnxIsUuFGF1cLLmi07YuLYC6PSqycTg83I_D8EouW7lppPp6uGZ4txt0dcvrW9tcM3BkEYv6ZDT1sEK59gFCNmu0Ty20Xmy9B45SkFVfp64y0hBhZjzy4eY2OcOhE6pFO4i7A5nS-fRYzRV4i4CCjOhjW2Ib3pxZQlz0V-7LMtPHI1gbL1e_82aAV0I5IefD4"
                 />
-                <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-gradient-to-br from-purple to-light-purple rounded-full opacity-80 blur-xl"></div>
               </div>
-            </div>
-            <div>
-              <h2 className="text-4xl font-semibold text-dark-green mb-6 font-playfair tracking-tight">Our Story</h2>
-              <p className="text-lg text-gray-600 mb-6">
-                DeReFund was founded to revolutionize disaster relief through blockchain technology. 
-                We connect donors directly with verified NGOs working on the ground, ensuring every 
-                contribution reaches those who need it most.
-              </p>
-              <h3 className="text-3xl font-semibold text-gray-800 mb-4">Our Mission</h3>
-              <p className="text-lg text-gray-600 mb-4">
-                To create a transparent, accountable, and efficient platform for disaster relief 
-                donations where trust is built into every transaction.
-              </p>
-              <ul className="space-y-2 mb-8">
-                <li className="flex items-center text-gray-600">
-                  <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Milestone-based fund releases
-                </li>
-                <li className="flex items-center text-gray-600">
-                  <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Blockchain transparency
-                </li>
-                <li className="flex items-center text-gray-600">
-                  <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Verified NGO partnerships
-                </li>
-              </ul>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <div className="text-5xl font-bold text-blue-600 mb-2">2024</div>
-                  <div className="text-gray-600">Founded</div>
-                </div>
-                <div>
-                  <div className="text-5xl font-bold text-blue-600 mb-2">100%</div>
-                  <div className="text-gray-600">Transparent</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Campaigns Section */}
-      <section className="py-20 px-6 bg-gradient-to-b from-light-gray to-white relative">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <h2 className="text-5xl font-semibold text-dark-green text-center mb-16 font-playfair tracking-tight">Active Campaigns</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {campaigns.map((campaign, index) => {
-              const colorClasses = getColorClasses(campaign.color);
-              const percentage = (campaign.raised / campaign.goal) * 100;
-              
-              return (
-                <div key={index} className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all border-2 border-gray-100 hover:border-purple hover-lift">
-                  <img 
-                    src={campaign.image}
-                    alt={campaign.title}
-                    className="w-full h-64 object-cover"
-                  />
-                  <div className="p-6">
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-3">{campaign.title}</h3>
-                    <p className="text-gray-600 mb-4">{campaign.description}</p>
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>Raised: ${campaign.raised.toLocaleString()}</span>
-                        <span>Goal: ${campaign.goal.toLocaleString()}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className={`${colorClasses.progress} h-3 rounded-full`} 
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
+              <div className="absolute -bottom-6 -left-6 glass-panel p-6 rounded-xl shadow-ambient max-w-xs border border-white/30">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+                    <span className="material-symbols-outlined">verified_user</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-outline uppercase tracking-widest">Verified NGO</p>
+                    <p className="font-bold text-on-surface">Red Cross Alliance</p>
                   </div>
                 </div>
-              );
-            })}
+                <p className="text-sm text-on-surface-variant italic">
+                  &quot;DeReFund accelerated our ground response by 40% in the last cyclone.&quot;
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-surface-container-low -skew-x-12 translate-x-1/4 -z-0" />
+        </section>
+
+        {/* Impact Stats */}
+        <section className="py-12 bg-surface-container-lowest relative z-20 -mt-10 mx-6 rounded-xl shadow-ambient border border-outline-variant/10">
+          <div className="max-w-7xl mx-auto px-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+              <div>
+                <p className="text-5xl font-black text-primary tracking-tighter mb-2">$14.2M+</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-outline">Total Raised</p>
+              </div>
+              <div>
+                <p className="text-5xl font-black text-secondary tracking-tighter mb-2">840K</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-outline">Lives Impacted</p>
+              </div>
+              <div>
+                <p className="text-5xl font-black text-on-surface tracking-tighter mb-2">156</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-outline">Verified NGOs</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Mission Statement */}
+        <section className="py-24 px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-xs font-bold text-primary uppercase tracking-[0.3em] mb-8">Our Mission</h2>
+            <p className="text-4xl md:text-5xl font-bold text-on-surface leading-tight tracking-tight">
+              We bridge the gap between global empathy and local action, ensuring every dollar finds its way to the
+              hands that need it most.
+            </p>
+            <div className="mt-12 h-1 w-24 bg-primary mx-auto" />
+          </div>
+        </section>
+
+        {/* How it Works */}
+        <section className="py-24 bg-surface-container-low px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex justify-between items-end mb-16">
+              <div>
+                <h2 className="text-4xl font-black tracking-tighter mb-4">How DeReFund Works</h2>
+                <p className="text-on-surface-variant max-w-md">
+                  Our dual-ecosystem ensures transparency for donors and rapid deployment for partners.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <span className="px-4 py-2 bg-primary-fixed text-on-primary-fixed rounded-full text-xs font-bold">
+                  FOR DONORS
+                </span>
+                <span className="px-4 py-2 bg-surface-container-highest text-on-surface-variant rounded-full text-xs font-bold">
+                  FOR NGOS
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 group hover:shadow-ambient transition-all">
+                <div className="text-primary mb-6 group-hover:scale-110 transition-transform origin-left">
+                  <span className="material-symbols-outlined text-5xl">search_insights</span>
+                </div>
+                <h3 className="text-xl font-bold mb-4">1. Choose &amp; Verify</h3>
+                <p className="text-on-surface-variant text-sm leading-relaxed">
+                  Browse active disasters and read verified reports from NGOs on the ground. Every campaign is vetted
+                  by our volunteer network.
+                </p>
+              </div>
+
+              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 group hover:shadow-ambient transition-all">
+                <div className="text-primary mb-6 group-hover:scale-110 transition-transform origin-left">
+                  <span className="material-symbols-outlined text-5xl">payments</span>
+                </div>
+                <h3 className="text-xl font-bold mb-4">2. Direct Donation</h3>
+                <p className="text-on-surface-variant text-sm leading-relaxed">
+                  Contribute directly using global or local payment methods. Your funds are locked into milestone-based
+                  smart contracts.
+                </p>
+              </div>
+
+              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 group hover:shadow-ambient transition-all">
+                <div className="text-primary mb-6 group-hover:scale-110 transition-transform origin-left">
+                  <span className="material-symbols-outlined text-5xl">monitoring</span>
+                </div>
+                <h3 className="text-xl font-bold mb-4">3. Track Impact</h3>
+                <p className="text-on-surface-variant text-sm leading-relaxed">
+                  Receive real-time updates and proof-of-impact photos as the NGO reaches specific recovery milestones.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Urgent Relief Efforts */}
+        <section className="py-24 px-6 bg-surface">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+              <h2 className="text-4xl font-black tracking-tighter">Urgent Relief Efforts</h2>
+              <a className="text-primary font-bold flex items-center gap-2 hover:underline">
+                View All Campaigns <span className="material-symbols-outlined">arrow_right_alt</span>
+              </a>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* Card 1 */}
+              <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-ambient transition-all flex flex-col">
+                <div className="relative h-56 overflow-hidden">
+                  <img
+                    className="w-full h-full object-cover"
+                    alt="Overhead view of flooded city streets with rescue boats"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1QgNpYfxK3gDjZ4bPULItIiKfqPNgfjj6xHVybP0_jz6_mHQDu9nGHAQMr_GWlZiuAukgwWYoOk2eTByUFKXScSPZfcyyM3puuXS7O1-1uVZLR-RGlvrfTnxC3T0v6T2VuZaHT-hsJ9AaeiHhMg9MhcZUnPS1ok7alx3C75LYSd7sAqqU1nlHGHhilwIeXy42TU1qKb4Y-cGN9HCmmtVDJObuzPit5B3Vhv4gHMAkj8yLsptZyxS2DRHKpxEiemfpntTcX-1OMQ8"
+                  />
+                  <div className="absolute top-4 left-4 bg-tertiary-container text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">
+                    Critical
+                  </div>
+                </div>
+                <div className="p-6 flex-grow">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-bold text-lg leading-tight">
+                      East Java Flash Flood Emergency Response
+                    </h3>
+                    <span className="material-symbols-outlined text-secondary">verified</span>
+                  </div>
+                  <div className="w-full bg-surface-container-high h-2 rounded-full mb-3">
+                    <div className="bg-primary h-full rounded-full" style={{ width: '72%' }} />
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-outline mb-6">
+                    <span>$144,000 raised</span>
+                    <span className="text-on-surface">72%</span>
+                  </div>
+                  <button className="w-full py-3 bg-surface-container-high text-on-surface font-bold text-sm rounded-md hover:bg-primary hover:text-white transition-colors">
+                    Support Campaign
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 2 */}
+              <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-ambient transition-all flex flex-col">
+                <div className="relative h-56 overflow-hidden">
+                  <img
+                    className="w-full h-full object-cover"
+                    alt="Parched cracked earth with a green sprout"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBITK6z9dlLA2phojeSHVm4jS-0fGaJa7V6FRQJDTx1O0tNTih2jJGxpNG4SBX0mZ3ja6inPl7rET2_vj4pS_WqUQ6couRZDQN1rHIeCfq_stls5m6e5JO807xBiXjzkeLUfZlI09LaS4ahOl31CrzkbrswsQ_afyzOuo7CbvszlwMlrivemp7g4HOeXdX7kV8eFXnq4orIwx6ojVrBmjkJ9hh8iyxHGxfggnUfeLR6pNa8fCOWnasyAx7AODy12TY5izBGXmh-mzk"
+                  />
+                  <div className="absolute top-4 left-4 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">
+                    Ongoing
+                  </div>
+                </div>
+                <div className="p-6 flex-grow">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-bold text-lg leading-tight">
+                      Clean Water Access: Sahel Region Drought
+                    </h3>
+                    <span className="material-symbols-outlined text-secondary">verified</span>
+                  </div>
+                  <div className="w-full bg-surface-container-high h-2 rounded-full mb-3">
+                    <div className="bg-primary h-full rounded-full" style={{ width: '45%' }} />
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-outline mb-6">
+                    <span>$89,200 raised</span>
+                    <span className="text-on-surface">45%</span>
+                  </div>
+                  <button className="w-full py-3 bg-surface-container-high text-on-surface font-bold text-sm rounded-md hover:bg-primary hover:text-white transition-colors">
+                    Support Campaign
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 3 */}
+              <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-ambient transition-all flex flex-col">
+                <div className="relative h-56 overflow-hidden">
+                  <img
+                    className="w-full h-full object-cover"
+                    alt="Urban reconstruction site after an earthquake"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAShOmRPM3_onni30e8ooRVkwEMNBpGyzCHwGJRpNOPzYaGvys-Qh33imBkuLIPtHvlkQgZ8z0spPLbQ_xchzlw3oRDvSYEm0wZ5TbxTFfLc3JLv4ZAiOahrFyslgNBxV_R1IITAKfUuslRQNsCWWkoFjzQ38KG2rk_HEz2BQRnOKo_YAoRilI935K3pPnazxyF5mgym97xOIA8NFZaomWVYrXKRqMGMUAwuF4KxIXOf5OxjWGwE4lJK7W5dettpBZ8D2pA6N0-iEU"
+                  />
+                  <div className="absolute top-4 left-4 bg-secondary text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">
+                    Recovery
+                  </div>
+                </div>
+                <div className="p-6 flex-grow">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-bold text-lg leading-tight">Haiti School Reconstruction Fund</h3>
+                    <span className="material-symbols-outlined text-secondary">verified</span>
+                  </div>
+                  <div className="w-full bg-surface-container-high h-2 rounded-full mb-3">
+                    <div className="bg-primary h-full rounded-full" style={{ width: '91%' }} />
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-outline mb-6">
+                    <span>$312,000 raised</span>
+                    <span className="text-on-surface">91%</span>
+                  </div>
+                  <button className="w-full py-3 bg-surface-container-high text-on-surface font-bold text-sm rounded-md hover:bg-primary hover:text-white transition-colors">
+                    Support Campaign
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Transparency & Trust */}
+        <section className="py-24 bg-on-surface text-surface px-6 overflow-hidden relative">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-8 leading-tight">
+                Trust isn&apos;t promised.
+                <br />
+                It&apos;s programmed.
+              </h2>
+              <div className="space-y-8">
+                <div className="flex gap-6">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary-container/20 flex items-center justify-center border border-primary/30">
+                    <span className="material-symbols-outlined">gavel</span>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold mb-2">Volunteer Verification</h4>
+                    <p className="text-surface-dim text-sm leading-relaxed">
+                      Our &quot;Ground Truth&quot; network of independent volunteers verifies every milestone before
+                      funds are released from escrow.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-6">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary-container/20 flex items-center justify-center border border-primary/30">
+                    <span className="material-symbols-outlined">account_balance_wallet</span>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold mb-2">Milestone Tracking</h4>
+                    <p className="text-surface-dim text-sm leading-relaxed">
+                      Funds are disbursed in phases. Each phase requires photographic and geo-tagged proof of completion
+                      to unlock the next tranche.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-6">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary-container/20 flex items-center justify-center border border-primary/30">
+                    <span className="material-symbols-outlined">lock_open</span>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold mb-2">Immutable Transparency</h4>
+                    <p className="text-surface-dim text-sm leading-relaxed">
+                      Every transaction and verification step is logged on a public ledger, providing an audit trail that
+                      cannot be altered or obscured.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="bg-surface-container-highest/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 rotate-3">
+                <img
+                  className="rounded-lg shadow-2xl"
+                  alt="Dashboard UI showing impact charts and fund flows"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPW_UqbXqWXfSmNh2tDo9PkG23hV5tgB9TJywymtXADc58c9QMumMLf9ViqCcLaywrZ68iwdEeQdI3t36ZgMWLqqeetgUgesTMWVlzy-kPWgrM92RM1F04gCm9qsq3JQQqGMCQxDM8CPtFw48nxkjE4WIw_pd8ngmBf84exOL_SJD32Myhj9GsnV1rgc4LSCYLQZQH1G3ICYU4u4XmkTFexg26O-gAl4lKFiYPS1IF2TcodcFplGyWMbmUJfMGV7zOToIU-oPwWjs"
+                />
+              </div>
+              <div className="absolute -top-12 -right-12 w-64 h-64 bg-primary/20 rounded-full blur-[80px]" />
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonial */}
+        <section className="py-24 px-6 bg-surface-container-low">
+          <div className="max-w-5xl mx-auto bg-surface-container-lowest p-12 rounded-2xl shadow-ambient border border-outline-variant/5">
+            <div className="flex flex-col items-center text-center">
+              <span className="material-symbols-outlined text-6xl text-primary/30 mb-8">format_quote</span>
+              <p className="text-2xl md:text-3xl font-medium text-on-surface leading-snug mb-10">
+                &quot;DeReFund has completely transformed how we respond to local crises. The speed at which we can now
+                access verified donor funds means we can deploy aid in hours, not weeks.&quot;
+              </p>
+              <div className="flex items-center gap-4 text-left">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200">
+                  <img
+                    className="w-full h-full object-cover"
+                    alt="Portrait of humanitarian worker"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpjLU-UL_jlonuGXyKKhunYTeUBSP_NEOjMC0xR_DD6ASuIc2VvqlYzE4tGlrY_H8K0kXoUfMpAsst8jfvCwTAsj-wMYR6LNxIqyxb6nACUJ1Cg5n_BNyZd-_tP2L352FPXiWP3oYKWMKh41zrS8ApFZc60fbjKOTnR5OLSumNcWue20j5GVZ7J0SscEw9lNNBITMerptkC8BkjMukuHY2uYLmivhfLHdxYYc3GKBaNbpHmBsiOmM5mwvSiSbQGsHFKZwUqdDIjV8"
+                  />
+                </div>
+                <div>
+                  <p className="font-bold text-on-surface">Elena Rodriguez</p>
+                  <p className="text-sm text-on-surface-variant">Director, Hope First NGO</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="py-24 px-6 text-center">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-5xl font-black tracking-tighter mb-6">
+              Ready to make a difference?
+            </h2>
+            <p className="text-on-surface-variant text-lg mb-10">
+              Join thousands of donors and verified NGOs working together to rebuild what matters.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button className="primary-gradient text-white px-10 py-5 rounded-md font-bold text-xl shadow-lg active:scale-95 duration-150">
+                Browse All Campaigns
+              </button>
+              <button className="bg-surface-container-highest text-on-surface px-10 py-5 rounded-md font-bold text-xl hover:bg-surface-dim transition-colors">
+                Partner With Us
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer (Stitch layout) */}
+      <footer className="w-full py-12 px-8 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-7xl mx-auto">
+          <div className="col-span-1 md:col-span-1">
+            <span className="text-xl font-black text-slate-900 dark:text-white mb-4 block">DeReFund</span>
+            <p className="text-xs font-normal leading-loose text-slate-500">
+              Humanitarian Crowdfunding Reimagined. Built for speed, trust, and radical transparency.
+            </p>
+          </div>
+          <div>
+            <h5 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-6">
+              Platform
+            </h5>
+            <ul className="space-y-4">
+              <li>
+                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
+                  Mission
+                </a>
+              </li>
+              <li>
+                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
+                  NGO Partners
+                </a>
+              </li>
+              <li>
+                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
+                  Transparency
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h5 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-6">
+              Company
+            </h5>
+            <ul className="space-y-4">
+              <li>
+                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
+                  Contact
+                </a>
+              </li>
+              <li>
+                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
+                  Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
+                  Careers
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h5 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-6">
+              Newsletter
+            </h5>
+            <p className="text-xs text-slate-500 mb-4">Stay updated on active relief efforts.</p>
+            <div className="flex">
+              <input
+                className="bg-surface-container-high border-none text-xs p-2 rounded-l-md w-full focus:ring-1 focus:ring-primary"
+                placeholder="Email address"
+                type="email"
+              />
+              <button className="bg-primary text-white p-2 rounded-r-md">
+                <span className="material-symbols-outlined text-sm">send</span>
+              </button>
+            </div>
           </div>
         </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-purple via-light-purple to-dark-green relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-x-32 -translate-y-32"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-10 rounded-full translate-x-48 translate-y-48"></div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h2 className="text-5xl font-semibold text-white mb-6 font-playfair tracking-tight">Make an Impact. Save Lives.</h2>
-          <p className="text-xl text-white/90 mb-8 font-dmsans tracking-tight">
-            Join thousands of donors making a difference in disaster relief efforts worldwide. 
-            Every donation is tracked, verified, and ensures direct impact.
+        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+          <p className="text-xs font-normal leading-loose text-slate-500">
+            © 2024 DeReFund. Humanitarian Crowdfunding Reimagined.
           </p>
+          <div className="flex gap-4">
+            <span className="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary">public</span>
+            <span className="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary">hub</span>
+            <span className="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary">share</span>
+          </div>
         </div>
-      </section>
-
-      <Footer />
-    </>
+      </footer>
+    </div>
   );
 };
 
 export default HomePage;
+

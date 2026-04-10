@@ -33,7 +33,7 @@ const AdminCampaigns = () => {
             try {
               const status = await volunteerVerificationAPI.getCampaignVerificationStatus(campaign.campaign_id);
               return { campaignId: campaign.campaign_id, status: status.data };
-            } catch (err) {
+            } catch {
               return { campaignId: campaign.campaign_id, status: null };
             }
           });
@@ -111,6 +111,7 @@ const AdminCampaigns = () => {
               const verificationStatus = verificationStatuses[campaign.campaign_id];
               // Use verification_count from campaign if available, otherwise from status
               const verificationCount = campaign.verification_count || verificationStatus?.verificationCount || 0;
+              const requiredVerifications = verificationStatus?.required || 1;
 
               return (
                 <div
@@ -141,14 +142,14 @@ const AdminCampaigns = () => {
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-blue-600" />
                           <span className="text-sm font-bold text-blue-700 font-dmsans tracking-tight">
-                            {verificationCount} / 20 Volunteers
+                            {verificationCount} / {requiredVerifications} Volunteers
                           </span>
                         </div>
                       </div>
                       <div className="w-full bg-blue-100 rounded-full h-2">
                         <div
                           className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min((verificationCount / 20) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((verificationCount / requiredVerifications) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>

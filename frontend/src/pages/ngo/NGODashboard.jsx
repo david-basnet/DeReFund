@@ -10,15 +10,13 @@ import {
 
 const NGODashboard = () => {
   const { user } = useAuth();
-  const [campaigns, setCampaigns] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
     totalRaised: 0,
     totalCampaigns: 0,
     liveCampaigns: 0,
     totalDonations: 0,
   });
-  const [verificationStatus, setVerificationStatus] = useState('ACTION_REQUIRED');
+  const [_verificationStatus, setVerificationStatus] = useState('ACTION_REQUIRED');
 
   // Fetch verification status immediately (separate from main data)
   useEffect(() => {
@@ -118,12 +116,7 @@ const NGODashboard = () => {
     };
   }, [user]);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    fetchDashboardData();
-  }, [user]);
-
-  const fetchDashboardData = async () => {
+  async function fetchDashboardData() {
     try {
       // Don't show loading - display data as it loads
       const userId = user?.user_id || user?.id;
@@ -133,7 +126,6 @@ const NGODashboard = () => {
       const campaignsData = Array.isArray(campaignsResponse.data?.campaigns) 
         ? campaignsResponse.data.campaigns 
         : [];
-      setCampaigns(campaignsData);
 
       // Calculate stats
       let totalRaised = 0;
@@ -161,12 +153,16 @@ const NGODashboard = () => {
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }
 
-  const canCreateCampaign = verificationStatus === 'APPROVED';
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const timer = setTimeout(() => {
+      fetchDashboardData();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [user]);
 
   return (
     <NGOLayout>

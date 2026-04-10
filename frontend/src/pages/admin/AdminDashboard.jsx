@@ -3,9 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { adminAPI } from '../../utils/api';
 import AdminLayout from '../../components/AdminLayout';
 import { 
-  Users, ShieldCheck, AlertTriangle, Activity, TrendingUp, FileText, 
-  DollarSign, CheckCircle2, Clock, BarChart3, Settings, Eye,
-  ArrowUpRight, ArrowDownRight, Zap, Globe
+  Users, ShieldCheck, AlertTriangle, Activity, TrendingUp, FileText,
+  DollarSign, CheckCircle2, Clock, BarChart3, ArrowUpRight, Zap, Globe
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -21,19 +20,9 @@ const AdminDashboard = () => {
     activeCampaigns: 0,
     verifiedNGOs: 0,
   });
-  const [loading, setLoading] = useState(false);
-  const [recentActivity, setRecentActivity] = useState([]);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    // Fetch stats on mount and when navigating back to dashboard
-    if (location.pathname === '/admin') {
-      fetchStats();
-    }
-  }, [location.pathname]);
 
   // Define fetchStats function - OPTIMIZED with single aggregation query
-  const fetchStats = async () => {
+  async function fetchStats() {
     try {
       // Use the new optimized dashboard stats endpoint
       const response = await adminAPI.getDashboardStats();
@@ -65,10 +54,18 @@ const AdminDashboard = () => {
         activeCampaigns: 0,
         verifiedNGOs: 0,
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const timer = setTimeout(() => {
+      if (location.pathname === '/admin') {
+        fetchStats();
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   // Additional fetch when navigating back to dashboard (already fetched on mount above)
 

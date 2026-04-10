@@ -13,6 +13,10 @@ const NGOMilestones = () => {
   const [selectedCampaign, setSelectedCampaign] = useState('ALL');
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       const userId = user?.user_id || user?.id;
       if (!userId) return;
@@ -106,10 +110,6 @@ const NGOMilestones = () => {
       </Layout>
     );
   }
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   return (
     <Layout>

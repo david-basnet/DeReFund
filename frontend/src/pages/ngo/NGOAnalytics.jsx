@@ -6,7 +6,6 @@ import { BarChart3, TrendingUp, DollarSign, Users, Activity, CheckCircle2 } from
 
 const NGOAnalytics = () => {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
     totalRaised: 0,
     totalCampaigns: 0,
@@ -18,16 +17,7 @@ const NGOAnalytics = () => {
   const [donationsOverTime, setDonationsOverTime] = useState([]);
   const [campaignPerformance, setCampaignPerformance] = useState([]);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    // Fetch immediately without showing loading state
-    fetchAnalytics();
-    // Set up real-time updates every 30 seconds
-    const interval = setInterval(fetchAnalytics, 30000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  const fetchAnalytics = async () => {
+  async function fetchAnalytics() {
     const userId = user?.user_id || user?.id;
     if (!userId) return;
 
@@ -59,8 +49,8 @@ const NGOAnalytics = () => {
             const date = new Date(donation.created_at || donation.donated_at).toLocaleDateString();
             donationsByDate[date] = (donationsByDate[date] || 0) + amount;
           });
-        } catch (err) {
-          console.error(`Error fetching donations for campaign ${campaign.campaign_id}:`, err);
+        } catch (error) {
+          console.error(`Error fetching donations for campaign ${campaign.campaign_id}:`, error);
         }
       }
 
@@ -89,7 +79,7 @@ const NGOAnalytics = () => {
               progress,
               donations: donations.length,
             };
-          } catch (err) {
+          } catch {
             return {
               id: campaign.campaign_id,
               title: campaign.title,
@@ -117,7 +107,20 @@ const NGOAnalytics = () => {
       console.error('Error fetching analytics:', error);
     }
     // Don't set loading to false - data updates in background
-  };
+  }
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const timer = setTimeout(() => {
+      fetchAnalytics();
+    }, 0);
+    // Set up real-time updates every 30 seconds
+    const interval = setInterval(fetchAnalytics, 30000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [user]);
 
   const maxDonation = donationsOverTime.length > 0 
     ? Math.max(...donationsOverTime.map(d => d.amount))

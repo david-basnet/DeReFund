@@ -16,6 +16,11 @@ const verifyCampaign = async (req, res, next) => {
   try {
     const { campaignId } = req.params;
     const volunteerId = req.user.userId;
+    const role = (req.user.role || '').toUpperCase();
+
+    if (role !== 'DONOR') {
+      return res.status(403).json(formatResponse(false, 'Only donor volunteers can verify campaigns'));
+    }
 
     // Check if campaign exists
     const campaign = await getCampaignById(campaignId);
@@ -51,7 +56,7 @@ const verifyCampaign = async (req, res, next) => {
     res.json(formatResponse(true, 'Campaign verified successfully', {
       verificationCount,
       required: REQUIRED_VERIFICATIONS,
-      status: verificationCount >= REQUIRED_VERIFICATIONS ? 'VERIFIED_BY_VOLUNTEERS' : 'PENDING_VERIFICATION'
+      status: verificationCount >= REQUIRED_VERIFICATIONS ? 'PENDING_ADMIN_APPROVAL' : 'PENDING_VERIFICATION'
     }));
   } catch (error) {
     next(error);

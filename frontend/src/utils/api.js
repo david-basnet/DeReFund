@@ -23,7 +23,7 @@ const apiCall = async (endpoint, options = {}) => {
     let data;
     try {
       data = await response.json();
-    } catch (jsonError) {
+    } catch {
       // If JSON parsing fails, but status is ok, it might be empty response
       if (response.ok) {
         return { success: true, message: 'Request successful', data: null };

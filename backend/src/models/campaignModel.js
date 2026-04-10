@@ -63,12 +63,23 @@ const getAllCampaigns = async (page = 1, limit = 10, status = null, ngo_id = nul
   params.push(limit, offset);
 
   const result = await pool.query(query, params);
-  
-  const countQuery = `
-    SELECT COUNT(*) FROM campaigns 
-    WHERE 1=1 ${status ? `AND status = '${status}'` : ''} ${ngo_id ? `AND ngo_id = '${ngo_id}'` : ''}
-  `;
-  const countResult = await pool.query(countQuery);
+
+  let countQuery = 'SELECT COUNT(*) FROM campaigns WHERE 1=1';
+  const countParams = [];
+  let countParamCount = 1;
+
+  if (status) {
+    countQuery += ` AND status = $${countParamCount}`;
+    countParams.push(status);
+    countParamCount++;
+  }
+
+  if (ngo_id) {
+    countQuery += ` AND ngo_id = $${countParamCount}`;
+    countParams.push(ngo_id);
+  }
+
+  const countResult = await pool.query(countQuery, countParams);
 
   return {
     campaigns: result.rows,

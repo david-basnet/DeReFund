@@ -19,6 +19,10 @@ const ReportDisaster = () => {
     images: [],
   });
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -66,10 +70,6 @@ const ReportDisaster = () => {
       </Layout>
     );
   }
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   return (
     <Layout>

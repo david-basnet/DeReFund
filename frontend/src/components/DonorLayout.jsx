@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 const DonorLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();

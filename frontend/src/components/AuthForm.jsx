@@ -6,7 +6,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import './AuthForm.css';
 
 const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
-  const { login, register, user } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(initialMode === 'signup');
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -29,7 +29,6 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showRepeatPassword, setShowRepeatPassword] = useState(false);
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   const containerRef = useRef(null);
   const overlayRef = useRef(null);
@@ -707,13 +706,11 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
 
     const signInForm = signInFormRef.current.querySelector('form');
     const signInTitle = signInForm.querySelector('h1');
-    const descElement = signInForm.querySelector('.forgot-password-description');
     const emailInput = signInForm.querySelector('input[type="email"]');
     const passwordInput = signInForm.querySelector('input[type="password"]');
     const keepLoggedInDiv = signInForm.querySelector('.keep-logged-in');
     const forgotPasswordLink = signInForm.querySelector('.forgot-password');
     const submitButton = signInForm.querySelector('button[type="submit"]');
-    const backLink = signInForm.querySelector('.back-to-signin');
     
     setIsForgotPassword(false);
     
