@@ -4,6 +4,9 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { publicAPI, milestoneAPI } from '../../utils/api';
 import { assets } from '../../assets/assets';
+import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther } from 'viem';
+import toast from 'react-hot-toast';
 
 function formatUsd(n) {
   const x = Number(n) || 0;
@@ -13,12 +16,47 @@ function formatUsd(n) {
 const CampaignDetail = () => {
   const { campaignId } = useParams();
   const navigate = useNavigate();
+  const { isConnected } = useAccount();
+  const { sendTransaction, data: hash, isPending: isSending } = useSendTransaction();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+
   const [campaign, setCampaign] = useState(null);
   const [milestones, setMilestones] = useState([]);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [donationAmount, setDonationAmount] = useState('0.01');
+  const [isDonating, setIsDonating] = useState(false);
+
+  useEffect(() => {
+    if (isConfirmed) {
+      toast.success('Donation successful! Thank you for your support.');
+      setIsDonating(false);
+      // In a real app, we'd update the backend with the transaction hash
+    }
+  }, [isConfirmed]);
+
+  const handleDonate = async () => {
+    if (!isConnected) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    if (!campaign?.ngo_wallet_address) {
+      toast.error('NGO wallet address not found');
+      return;
+    }
+
+    try {
+      sendTransaction({
+        to: campaign.ngo_wallet_address,
+        value: parseEther(donationAmount),
+      });
+    } catch (err) {
+      toast.error(err.message || 'Failed to send donation');
+    }
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -210,16 +248,72 @@ const CampaignDetail = () => {
                     </div>
 
                     <div className="space-y-4 mt-6">
-                      <button
-                        type="button"
-                        className="w-full primary-gradient text-on-primary py-4 rounded-md font-bold text-lg shadow-lg flex items-center justify-center gap-2"
-                      >
-                        <span className="material-symbols-outlined">favorite</span>
-                        Donate
-                      </button>
+                      {isDonating ? (
+                        <div className="space-y-4 p-4 bg-surface-container-high rounded-lg border border-outline-variant/20 animate-in fade-in slide-in-from-top-4 duration-300">
+                          <label className="block text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">
+                            Enter Amount (ETH)
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0.001"
+                              value={donationAmount}
+                              onChange={(e) => setDonationAmount(e.target.value)}
+                              className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-3 text-lg font-bold focus:ring-2 focus:ring-primary focus:outline-none"
+                              placeholder="0.01"
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold">ETH</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleDonate}
+                              disabled={isSending || isConfirming}
+                              className="flex-1 primary-gradient text-on-primary py-3 rounded-lg font-bold shadow-lg disabled:opacity-50 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                            >
+                              {(isSending || isConfirming) ? (
+                                <>
+                                  <span className="animate-spin material-symbols-outlined">progress_activity</span>
+                                  {isSending ? 'Sending...' : 'Confirming...'}
+                                </>
+                              ) : (
+                                <>
+                                  <span className="material-symbols-outlined">send</span>
+                                  Send ETH
+                                </>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setIsDonating(false)}
+                              disabled={isSending || isConfirming}
+                              className="px-4 py-3 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface-variant font-bold hover:bg-surface-container-high transition-all"
+                            >
+                              <span className="material-symbols-outlined">close</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsDonating(true)}
+                          className="w-full primary-gradient text-on-primary py-4 rounded-md font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:shadow-primary/20"
+                        >
+                          <span className="material-symbols-outlined">favorite</span>
+                          Donate Now
+                        </button>
+                      )}
+                      
+                      {!isConnected && !isDonating && (
+                        <p className="text-[10px] text-center text-primary font-bold animate-pulse">
+                          Connect your wallet to donate!
+                        </p>
+                      )}
+                      
                       <p className="text-[10px] text-center text-outline leading-relaxed">
-                        Payments and on-chain details are configured per deployment. This page shows live, admin-approved
-                        campaigns only.
+                        Donations go directly to the NGO's verified wallet address: 
+                        <span className="block font-mono text-primary mt-1">{campaign?.ngo_wallet_address || 'Not set'}</span>
                       </p>
                     </div>
                   </div>

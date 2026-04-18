@@ -100,6 +100,7 @@ Create `frontend/.env`:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
+VITE_REOWN_PROJECT_ID=your_reown_project_id
 ```
 
 #### Contracts (.env)
@@ -108,8 +109,8 @@ Create `contracts/.env`:
 
 ```env
 PRIVATE_KEY=your_wallet_private_key
-POLYGON_RPC_URL=https://rpc-mumbai.maticvigil.com
-POLYGONSCAN_API_KEY=your_polygonscan_api_key
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your_api_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
 ```
 
 ### 4. Running the Application
@@ -146,16 +147,28 @@ npx hardhat test
 2. Get your cloud name, API key, and API secret from Dashboard
 3. Add to backend `.env` file
 
-## MetaMask Setup
+## MetaMask & Web3 Setup
 
-1. Install MetaMask browser extension
-2. Create or import wallet
-3. Switch to Polygon Mumbai Testnet:
-   - Network Name: Polygon Mumbai
-   - RPC URL: https://rpc-mumbai.maticvigil.com
-   - Chain ID: 80001
-   - Currency Symbol: MATIC
-   - Block Explorer: https://mumbai.polygonscan.com
+### 1. Install MetaMask
+- Install the MetaMask browser extension from [metamask.io](https://metamask.io/).
+- Create a new wallet and **securely save your Secret Recovery Phrase**.
+
+### 2. Configure Sepolia Testnet (Academic/Testing)
+- In MetaMask, click the network selector (top-left).
+- Toggle "Show test networks" to ON.
+- Select **Sepolia**.
+- To get test ETH (free), use a faucet like:
+  - [Sepolia Faucet by Alchemy](https://sepoliafaucet.com/)
+  - [Infura Sepolia Faucet](https://www.infura.io/faucet/sepolia)
+
+### 3. Get Reown Project ID (for WalletConnect)
+- Go to [Reown Cloud](https://cloud.reown.com/) (formerly WalletConnect).
+- Create a new project named "DeReFund".
+- Copy the **Project ID** and paste it into `frontend/.env` as `VITE_REOWN_PROJECT_ID`.
+
+### 4. Update Web3 Config
+- The project uses `frontend/src/config/web3.js`. 
+- It will automatically look for `VITE_REOWN_PROJECT_ID` in your environment variables.
 
 ## Troubleshooting
 

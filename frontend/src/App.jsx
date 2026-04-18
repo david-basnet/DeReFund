@@ -1,9 +1,32 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { config, projectId, networks, wagmiAdapter } from './config/web3';
+import { createAppKit } from '@reown/appkit/react';
 import ProtectedRoute from './components/ProtectedRoute';
+
+const queryClient = new QueryClient();
+
+// Initialize AppKit
+createAppKit({
+  adapters: [wagmiAdapter],
+  networks,
+  projectId,
+  metadata: {
+    name: 'DeReFund',
+    description: 'Decentralized Relief Fund',
+    url: window.location.origin,
+    icons: ['https://avatars.githubusercontent.com/u/37784886']
+  },
+  features: {
+    analytics: true
+  }
+});
 // Public pages
 import HomePage from './pages/public/HomePage';
 import AboutPage from './pages/public/AboutPage';
+import PublicLedger from './pages/public/PublicLedger';
 import BrowseCampaigns from './pages/public/BrowseCampaigns';
 import CampaignDetail from './pages/public/CampaignDetail';
 import BrowseDisasters from './pages/public/BrowseDisasters';
@@ -53,6 +76,7 @@ const AppContent = () => {
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/ledger" element={<PublicLedger />} />
         <Route path="/campaigns" element={<BrowseCampaigns />} />
         <Route path="/campaigns/:campaignId" element={<CampaignDetail />} />
         <Route path="/disasters" element={<BrowseDisasters />} />
@@ -212,13 +236,17 @@ const AppContent = () => {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <Router>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </Router>
-    </ErrorBoundary>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Router>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </Router>
+        </ErrorBoundary>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 

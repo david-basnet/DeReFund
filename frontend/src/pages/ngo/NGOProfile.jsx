@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI, uploadAPI } from '../../utils/api';
 import NGOLayout from '../../components/NGOLayout';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, Wallet } from 'lucide-react';
+import { useAccount } from 'wagmi';
 
 const NGOProfile = () => {
   const { user, fetchUserProfile } = useAuth();
+  const { address, isConnected } = useAccount();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -202,13 +204,31 @@ const NGOProfile = () => {
                     Wallet Address
                   </label>
                   {editing ? (
-                    <input
-                      type="text"
-                      value={formData.wallet_address}
-                      onChange={(e) => handleInputChange('wallet_address', e.target.value)}
-                      placeholder="0x..."
-                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 font-mono text-sm tracking-tight transition-all"
-                    />
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={formData.wallet_address}
+                          onChange={(e) => handleInputChange('wallet_address', e.target.value)}
+                          placeholder="0x..."
+                          className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 font-mono text-sm tracking-tight transition-all"
+                        />
+                        {isConnected && address && address.toLowerCase() !== formData.wallet_address?.toLowerCase() && (
+                          <button
+                            type="button"
+                            onClick={() => handleInputChange('wallet_address', address)}
+                            className="px-4 py-2 bg-primary/10 text-primary rounded-xl border-2 border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-2 text-sm font-bold"
+                            title="Use connected wallet address"
+                          >
+                            <Wallet className="w-4 h-4" />
+                            Use Connected
+                          </button>
+                        )}
+                      </div>
+                      {!isConnected && (
+                        <p className="text-xs text-slate-500 italic">Connect your wallet in the navigation bar to quickly fill this field.</p>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-slate-900 font-mono text-sm tracking-tight bg-slate-50 p-2 rounded-lg border border-slate-200 inline-block">
                       {formData.wallet_address || 'Not connected'}

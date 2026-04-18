@@ -28,6 +28,7 @@ const campaignSelectWithJoins = {
   updated_at: campaigns.updated_at,
   ngo_name: ngoUser.name,
   ngo_email: ngoUser.email,
+  ngo_wallet_address: ngoUser.wallet_address,
   creator_name: creatorUser.name,
   disaster_title: disasterCases.title,
   disaster_location: disasterCases.location,
