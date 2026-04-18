@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, Users, FileText, AlertTriangle, Activity,
+  Home, LayoutDashboard, Users, FileText, AlertTriangle, Activity,
   LogOut, Menu, X, Settings, ShieldCheck, ChevronRight
 } from 'lucide-react';
 
@@ -23,6 +23,7 @@ const AdminLayout = ({ children }) => {
   };
 
   const menuItems = [
+    { path: '/', icon: Home, label: 'Home' },
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/admin/users', icon: Users, label: 'Users' },
     { path: '/admin/campaigns', icon: FileText, label: 'Campaigns' },
@@ -32,6 +33,9 @@ const AdminLayout = ({ children }) => {
   ];
 
   const isActive = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
     if (path === '/admin') {
       return location.pathname === '/admin';
     }

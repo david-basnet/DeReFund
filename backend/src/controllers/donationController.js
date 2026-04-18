@@ -1,14 +1,28 @@
 const { eq, sql } = require('drizzle-orm');
 const { db } = require('../db/client');
 const { donations, campaigns } = require('../db/schema');
-const { getDonationById, getDonationsByCampaign, getDonationsByDonor } = require('../services/donationService');
+const { getDonationById, getDonationsByCampaign, getDonationsByDonor, getAllDonations } = require('../services/donationService');
 const { formatResponse } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
+
+const getAll = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const result = await getAllDonations(parseInt(page, 10), parseInt(limit, 10));
+    res.json(formatResponse(true, 'Donations retrieved successfully', result));
+  } catch (error) {
+    next(error);
+  }
+};
 
 const create = async (req, res, next) => {
   try {
     const { campaign_id, amount, tx_hash, block_number, token_type } = req.body;
-    const donor_id = req.user.userId;
+    const donor_id = req.user?.userId || null;
+
+    if (!campaign_id || !amount || !tx_hash) {
+      return res.status(400).json(formatResponse(false, 'Missing required fields'));
+    }
 
     if (!/^0x[a-fA-F0-9]{64}$/.test(tx_hash || '')) {
       return res.status(400).json(formatResponse(false, 'Invalid transaction hash format'));
@@ -56,7 +70,7 @@ const create = async (req, res, next) => {
       await tx
         .update(campaigns)
         .set({
-          current_amount: sql`${campaigns.current_amount} + ${amount}`,
+          current_amount: sql`${campaigns.current_amount} + ${Number(amount)}`,
         })
         .where(eq(campaigns.campaign_id, campaign_id));
 
@@ -111,4 +125,5 @@ module.exports = {
   getById,
   getByCampaign,
   getByDonor,
+  getAll,
 };

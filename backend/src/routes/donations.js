@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middleware/auth');
+const { authenticate, maybeAuthenticate } = require('../middleware/auth');
 const { validateDonation } = require('../utils/validators');
-const { create, getById, getByCampaign, getByDonor } = require('../controllers/donationController');
+const { create, getById, getByCampaign, getByDonor, getAll } = require('../controllers/donationController');
+
+// Get all donations (public ledger)
+router.get('/all', getAll);
 
 // Get donations by donor (authenticated)
 router.get('/my-donations', authenticate, getByDonor);
@@ -13,8 +16,8 @@ router.get('/campaign/:campaignId', getByCampaign);
 // Get donation by ID (public)
 router.get('/:donationId', getById);
 
-// Create donation (authenticated)
-router.post('/', authenticate, validateDonation, create);
+// Create donation (authenticated or guest)
+router.post('/', maybeAuthenticate, validateDonation, create);
 
 module.exports = router;
 

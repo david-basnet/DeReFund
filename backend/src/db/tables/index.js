@@ -9,6 +9,7 @@ const {
   campaignStatusEnum,
   creationSourceEnum,
   milestoneStatusEnum,
+  notificationTypeEnum,
 } = require('./enums');
 const { users } = require('./users');
 const { userVerification } = require('./userVerification');
@@ -18,6 +19,7 @@ const { donations } = require('./donations');
 const { milestones } = require('./milestones');
 const { volunteerVerifications } = require('./volunteerVerifications');
 const { adminLogs } = require('./adminLogs');
+const { notifications } = require('./notifications');
 
 module.exports = {
   userRoleEnum,
@@ -27,6 +29,7 @@ module.exports = {
   campaignStatusEnum,
   creationSourceEnum,
   milestoneStatusEnum,
+  notificationTypeEnum,
   users,
   userVerification,
   disasterCases,
@@ -35,4 +38,5 @@ module.exports = {
   milestones,
   volunteerVerifications,
   adminLogs,
+  notifications,
 };

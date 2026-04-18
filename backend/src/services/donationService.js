@@ -1,4 +1,4 @@
-const { eq, desc, count } = require('drizzle-orm');
+const { eq, desc, count, sql } = require('drizzle-orm');
 const { db } = require('../db/client');
 const { donations, users, campaigns } = require('../db/schema');
 
@@ -108,9 +108,52 @@ const getDonationsByDonor = async (donorId, page = 1, limit = 10) => {
   };
 };
 
+const getAllDonations = async (page = 1, limit = 10) => {
+  const offset = (page - 1) * limit;
+  const rows = await db
+    .select({
+      donation_id: donations.donation_id,
+      campaign_id: donations.campaign_id,
+      donor_id: donations.donor_id,
+      amount: donations.amount,
+      tx_hash: donations.tx_hash,
+      token_type: donations.token_type,
+      created_at: donations.created_at,
+      donor_name: users.name,
+      campaign_title: campaigns.title,
+    })
+    .from(donations)
+    .leftJoin(users, eq(donations.donor_id, users.user_id))
+    .leftJoin(campaigns, eq(donations.campaign_id, campaigns.campaign_id))
+    .orderBy(desc(donations.created_at))
+    .limit(limit)
+    .offset(offset);
+
+  const [countRow] = await db.select({ total: count() }).from(donations);
+
+  const [stats] = await db.select({
+    total_volume: sql`SUM(${donations.amount})`,
+    total_transactions: count(),
+    unique_donors: sql`COUNT(DISTINCT ${donations.donor_id})`
+  }).from(donations);
+
+  return {
+    donations: rows,
+    total: Number(countRow?.total ?? 0),
+    stats: {
+      total_volume: Number(stats?.total_volume ?? 0),
+      total_transactions: Number(stats?.total_transactions ?? 0),
+      unique_donors: Number(stats?.unique_donors ?? 0)
+    },
+    page,
+    limit,
+  };
+};
+
 module.exports = {
   createDonation,
   getDonationById,
   getDonationsByCampaign,
   getDonationsByDonor,
+  getAllDonations,
 };

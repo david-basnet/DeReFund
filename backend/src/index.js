@@ -57,6 +57,7 @@ const milestoneRoutes = require('./routes/milestones');
 const adminRoutes = require('./routes/admin');
 const volunteerVerificationRoutes = require('./routes/volunteerVerification');
 const uploadRoutes = require('./routes/upload');
+const notificationRoutes = require('./routes/notifications');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/campaigns', campaignRoutes);
@@ -66,6 +67,7 @@ app.use('/api/milestones', milestoneRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/volunteer-verification', volunteerVerificationRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/api', (req, res) => {
   res.json({

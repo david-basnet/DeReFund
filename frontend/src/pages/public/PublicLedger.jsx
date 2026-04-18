@@ -2,21 +2,27 @@ import { useState, useEffect } from 'react';
 import { Search, ExternalLink, Filter, ArrowUpRight, ArrowDownLeft, Database } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { donationAPI } from '../../utils/api';
 
 const PublicLedger = () => {
   const [transactions, setTransactions] = useState([]);
+  const [stats, setStats] = useState({
+    total_volume: 0,
+    total_transactions: 0,
+    unique_donors: 0
+  });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // We'll fetch real transactions from the blockchain or backend later
   useEffect(() => {
     const fetchTransactions = async () => {
       setLoading(true);
       try {
-        // Placeholder for real API call
-        // const response = await publicAPI.getTransactions();
-        // setTransactions(response.data);
-        setTransactions([]); // Clear dummy data
+        const response = await donationAPI.getAll({ limit: 50 });
+        if (response.success) {
+          setTransactions(response.data.donations);
+          setStats(response.data.stats);
+        }
       } catch (error) {
         console.error('Failed to fetch transactions:', error);
       } finally {
@@ -26,6 +32,17 @@ const PublicLedger = () => {
 
     fetchTransactions();
   }, []);
+
+  const filteredTransactions = transactions.filter(tx => 
+    (tx.tx_hash?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (tx.donor_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (tx.campaign_title?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  );
+
+  const formatAddress = (addr) => {
+    if (!addr) return 'Unknown';
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -81,33 +98,41 @@ const PublicLedger = () => {
                         </td>
                       </tr>
                     ))
-                  ) : transactions.length > 0 ? (
-                    transactions.map((tx) => (
-                      <tr key={tx.id} className="hover:bg-surface-container-high transition-colors">
+                  ) : filteredTransactions.length > 0 ? (
+                    filteredTransactions.map((tx) => (
+                      <tr key={tx.donation_id} className="hover:bg-surface-container-high transition-colors">
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-primary font-mono text-sm">
-                            {tx.id}
+                          <a 
+                            href={`https://sepolia.etherscan.io/tx/${tx.tx_hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-primary font-mono text-xs hover:underline"
+                          >
+                            {formatAddress(tx.tx_hash)}
                             <ExternalLink className="h-3 w-3" />
-                          </div>
+                          </a>
                         </td>
-                        <td className="px-6 py-4 text-sm">{tx.from}</td>
-                        <td className="px-6 py-4 text-sm">{tx.to}</td>
-                        <td className="px-6 py-4 font-semibold text-sm">{tx.amount}</td>
+                        <td className="px-6 py-4 text-sm font-medium">{tx.donor_name || 'Anonymous Donor'}</td>
+                        <td className="px-6 py-4 text-sm">{tx.campaign_title}</td>
+                        <td className="px-6 py-4 font-bold text-sm text-on-surface">
+                          ${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            tx.type === 'Donation' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            tx.token_type === 'ETH' ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700'
                           }`}>
-                            {tx.type === 'Donation' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
-                            {tx.type}
+                            {tx.token_type}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 text-green-600 text-sm font-medium">
-                            <span className="h-2 w-2 rounded-full bg-green-600"></span>
-                            {tx.status}
+                          <span className="inline-flex items-center gap-1.5 text-green-600 text-xs font-black uppercase tracking-widest">
+                            <span className="h-2 w-2 rounded-full bg-green-600 animate-pulse"></span>
+                            Verified
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-on-surface-variant">{tx.timestamp}</td>
+                        <td className="px-6 py-4 text-xs font-medium text-on-surface-variant">
+                          {new Date(tx.created_at).toLocaleString()}
+                        </td>
                       </tr>
                     ))
                   ) : (
@@ -128,17 +153,17 @@ const PublicLedger = () => {
 
           {/* Stats Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant">
-              <h3 className="text-on-surface-variant text-sm font-medium mb-1">Total Volume</h3>
-              <p className="text-2xl font-bold">0.00 ETH</p>
+            <div className="bg-surface-container-low p-6 rounded-2xl border border-black shadow-sm">
+              <h3 className="text-on-surface-variant text-xs font-black uppercase tracking-widest mb-2">Total Impact (USD)</h3>
+              <p className="text-3xl font-black">${stats.total_volume.toLocaleString()}</p>
             </div>
-            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant">
-              <h3 className="text-on-surface-variant text-sm font-medium mb-1">Total Transactions</h3>
-              <p className="text-2xl font-bold">0</p>
+            <div className="bg-surface-container-low p-6 rounded-2xl border border-black shadow-sm">
+              <h3 className="text-on-surface-variant text-xs font-black uppercase tracking-widest mb-2">Total Contributions</h3>
+              <p className="text-3xl font-black">{stats.total_transactions}</p>
             </div>
-            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant">
-              <h3 className="text-on-surface-variant text-sm font-medium mb-1">Unique Wallets</h3>
-              <p className="text-2xl font-bold">0</p>
+            <div className="bg-surface-container-low p-6 rounded-2xl border border-black shadow-sm">
+              <h3 className="text-on-surface-variant text-xs font-black uppercase tracking-widest mb-2">Unique Donors</h3>
+              <p className="text-3xl font-black">{stats.unique_donors}</p>
             </div>
           </div>
         </div>

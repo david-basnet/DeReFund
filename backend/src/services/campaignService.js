@@ -210,6 +210,7 @@ const getPublicCampaignById = async (campaignId) => {
       updated_at: campaigns.updated_at,
       ngo_name: ngoUser.name,
       ngo_email: ngoUser.email,
+      ngo_wallet_address: ngoUser.wallet_address,
       disaster_title: disasterCases.title,
       disaster_location: disasterCases.location,
       disaster_images: disasterCases.images,

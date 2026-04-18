@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../utils/api';
+import { useDisconnect } from 'wagmi';
+import { useAppKit } from '@reown/appkit/react';
 
 const AuthContext = createContext();
 
@@ -17,6 +19,8 @@ export const AuthProvider = ({ children }) => {
   const [authFormMode, setAuthFormMode] = useState('signin');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { disconnect } = useDisconnect();
+  const { open } = useAppKit();
 
   useEffect(() => {
     // Check if user is logged in
@@ -46,27 +50,51 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (credentials) => {
-    const response = await authAPI.login(credentials);
-    localStorage.setItem('token', response.data.token);
-    // Set user immediately from login response
-    if (response.data?.user) {
-      setUser(response.data.user);
+    try {
+      const response = await authAPI.login(credentials);
+      localStorage.setItem('token', response.data.token);
+      
+      // Get user from response
+      const userData = response.data?.user || response.user || response.data;
+      setUser(userData);
+      
+      // Auto-connect wallet on login
+      setTimeout(() => {
+        open();
+      }, 500);
+
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-    // Also fetch full profile to ensure we have all data
-    await fetchUserProfile();
-    return response;
   };
 
   const register = async (userData) => {
-    const response = await authAPI.register(userData);
-    localStorage.setItem('token', response.data.token);
-    await fetchUserProfile();
-    return response;
+    try {
+      const response = await authAPI.register(userData);
+      localStorage.setItem('token', response.data.token);
+      
+      const userFromResponse = response.data?.user || response.user || response.data;
+      setUser(userFromResponse);
+      
+      // Auto-connect wallet on register
+      setTimeout(() => {
+        open();
+      }, 500);
+
+      return response;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    // Terminate wallet connection on logout
+    disconnect();
   };
 
   const openLoginModal = () => {

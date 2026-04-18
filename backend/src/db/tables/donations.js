@@ -8,7 +8,6 @@ const donations = pgTable('donations', {
     .notNull()
     .references(() => campaigns.campaign_id, { onDelete: 'cascade' }),
   donor_id: uuid('donor_id')
-    .notNull()
     .references(() => users.user_id, { onDelete: 'cascade' }),
   amount: numeric('amount', { precision: 18, scale: 2 }).notNull(),
   tx_hash: varchar('tx_hash', { length: 66 }).notNull().unique(),

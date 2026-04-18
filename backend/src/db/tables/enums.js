@@ -16,6 +16,7 @@ const campaignStatusEnum = pgEnum('campaign_status', [
 ]);
 const creationSourceEnum = pgEnum('creation_source', ['DONOR', 'NGO']);
 const milestoneStatusEnum = pgEnum('milestone_status', ['PENDING', 'SUBMITTED', 'APPROVED', 'REJECTED']);
+const notificationTypeEnum = pgEnum('notification_type', ['INFO', 'WARNING', 'SUCCESS', 'ERROR']);
 
 module.exports = {
   userRoleEnum,
@@ -25,4 +26,5 @@ module.exports = {
   campaignStatusEnum,
   creationSourceEnum,
   milestoneStatusEnum,
+  notificationTypeEnum,
 };

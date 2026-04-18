@@ -61,8 +61,29 @@ const isDonor = authorize('DONOR');
 // Check if user is donor or NGO
 const isDonorOrNGO = authorize('DONOR', 'NGO');
 
+const maybeAuthenticate = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, env.JWT_SECRET);
+    req.user = {
+      userId: decoded.userId || decoded.user_id,
+      email: decoded.email,
+      role: decoded.role
+    };
+    next();
+  } catch (error) {
+    // If token is invalid, just proceed without user info
+    next();
+  }
+};
+
 module.exports = {
   authenticate,
+  maybeAuthenticate,
   authorize,
   isAdmin,
   isNGO,

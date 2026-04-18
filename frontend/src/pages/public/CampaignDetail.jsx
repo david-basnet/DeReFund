@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
-import { publicAPI, milestoneAPI } from '../../utils/api';
+import { publicAPI, milestoneAPI, donationAPI } from '../../utils/api';
 import { assets } from '../../assets/assets';
 import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther } from 'viem';
@@ -28,14 +28,44 @@ const CampaignDetail = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [donationAmount, setDonationAmount] = useState('0.01');
   const [isDonating, setIsDonating] = useState(false);
+  const [ethPrice, setEthPrice] = useState(2500);
 
   useEffect(() => {
-    if (isConfirmed) {
-      toast.success('Donation successful! Thank you for your support.');
-      setIsDonating(false);
-      // In a real app, we'd update the backend with the transaction hash
+    const fetchPrice = async () => {
+      const price = await publicAPI.getEthPrice();
+      setEthPrice(price);
+    };
+    fetchPrice();
+    // Refresh price every 60 seconds
+    const interval = setInterval(fetchPrice, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const usdValue = (Number(donationAmount) * ethPrice).toFixed(2);
+
+  useEffect(() => {
+    if (isConfirmed && hash) {
+      const recordDonation = async () => {
+        try {
+          await donationAPI.create({
+            campaign_id: campaignId,
+            amount: usdValue,
+            tx_hash: hash,
+            token_type: 'ETH',
+          });
+          toast.success('Donation successful! Thank you for your support.');
+          setIsDonating(false);
+          // Reload campaign to show updated amount
+          const res = await publicAPI.getCampaign(campaignId);
+          if (res.data?.campaign) setCampaign(res.data.campaign);
+        } catch (err) {
+          console.error('Failed to record donation:', err);
+          toast.error('Donation confirmed on blockchain but failed to update on DeReFund. Please contact support.');
+        }
+      };
+      recordDonation();
     }
-  }, [isConfirmed]);
+  }, [isConfirmed, hash, campaignId, usdValue]);
 
   const handleDonate = async () => {
     if (!isConnected) {
@@ -248,7 +278,22 @@ const CampaignDetail = () => {
                     </div>
 
                     <div className="space-y-4 mt-6">
-                      {isDonating ? (
+                      {!campaign?.ngo_wallet_address ? (
+                        <div className="p-6 bg-amber-50 border-2 border-amber-200 rounded-xl text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                          <span className="material-symbols-outlined text-amber-500 text-4xl mb-2">account_balance_wallet</span>
+                          <h4 className="text-amber-900 font-bold text-lg mb-1">Wallet Not Configured</h4>
+                          <p className="text-amber-800 text-sm mb-4">
+                            This NGO hasn't connected their wallet yet. Donations are temporarily disabled for this campaign.
+                          </p>
+                          <button
+                            disabled
+                            className="w-full bg-amber-200 text-amber-700 py-3 rounded-lg font-bold cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            <span className="material-symbols-outlined">block</span>
+                            Donations Unavailable
+                          </button>
+                        </div>
+                      ) : isDonating ? (
                         <div className="space-y-4 p-4 bg-surface-container-high rounded-lg border border-outline-variant/20 animate-in fade-in slide-in-from-top-4 duration-300">
                           <label className="block text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">
                             Enter Amount (ETH)
@@ -260,11 +305,17 @@ const CampaignDetail = () => {
                               min="0.001"
                               value={donationAmount}
                               onChange={(e) => setDonationAmount(e.target.value)}
-                              className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-3 text-lg font-bold focus:ring-2 focus:ring-primary focus:outline-none"
+                              className="w-full bg-surface-container-lowest border-2 border-black rounded-lg px-4 py-3 text-lg font-bold focus:ring-2 focus:ring-primary focus:outline-none"
                               placeholder="0.01"
                             />
                             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold">ETH</span>
                           </div>
+                          
+                          <div className="flex justify-between items-center p-3 bg-black/5 rounded-lg border border-black/10">
+                            <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estimated USD</span>
+                            <span className="text-sm font-black text-on-surface">${usdValue}</span>
+                          </div>
+
                           <div className="flex gap-2">
                             <button
                               type="button"

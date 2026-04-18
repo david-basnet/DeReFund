@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { notificationAPI } from '../utils/api';
+import { useAccount } from 'wagmi';
 import {
+  Home,
   LayoutDashboard,
   FileText,
   DollarSign,
@@ -14,6 +17,10 @@ import {
   Menu,
   UserCircle,
   X,
+  Bell,
+  Check,
+  Trash2,
+  Wallet,
 } from 'lucide-react';
 
 const NGOLayout = ({ children }) => {
@@ -22,6 +29,7 @@ const NGOLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { address, isConnected } = useAccount();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -52,6 +60,7 @@ const NGOLayout = ({ children }) => {
   };
 
   const menuItems = [
+    { path: '/', icon: Home, label: 'Home' },
     { path: '/ngo', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/ngo/campaigns', icon: FileText, label: 'My Campaigns' },
     { path: '/ngo/create-campaign', icon: Plus, label: 'Create Campaign' },
@@ -62,6 +71,9 @@ const NGOLayout = ({ children }) => {
   ];
 
   const isActive = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
     if (path === '/ngo') {
       return location.pathname === '/ngo';
     }
@@ -72,10 +84,54 @@ const NGOLayout = ({ children }) => {
     return location.pathname.startsWith(path);
   };
 
-  // Check verification status
   const [verificationStatus, setVerificationStatus] = useState('ACTION_REQUIRED');
   const [showRejectionNotification, setShowRejectionNotification] = useState(false);
   const [hasCheckedNotification, setHasCheckedNotification] = useState(false);
+  
+  // Notifications state
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await notificationAPI.getAll();
+      if (response.success) {
+        setNotifications(response.data.notifications);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const markNotificationAsRead = async (id) => {
+    try {
+      await notificationAPI.markAsRead(id);
+      setNotifications(notifications.map(n => 
+        n.notification_id === id ? { ...n, is_read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    try {
+      await notificationAPI.delete(id);
+      setNotifications(notifications.filter(n => n.notification_id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      // Poll for new notifications every 2 minutes
+      const interval = setInterval(fetchNotifications, 120000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
   
   useEffect(() => {
     const fetchVerificationStatus = async (skipIfPending = false) => {
@@ -372,29 +428,145 @@ const NGOLayout = ({ children }) => {
                 </p>
               </div>
             </div>
-            <div className="relative group shrink-0">
-              <button
-                type="button"
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-100 sm:px-4"
-              >
-                <UserCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">Account</span>
-              </button>
-              <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 absolute right-0 top-full mt-2 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200/70">
-                <Link
-                  to="/ngo/profile"
-                  className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <Settings className="w-4 h-4" />
-                  Profile settings
-                </Link>
+            
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Wallet Status */}
+              <div className={`hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 ${
+                isConnected 
+                  ? 'bg-green-50 text-green-700' 
+                  : 'bg-amber-50 text-amber-700 opacity-60'
+              }`}>
+                <Wallet className={`w-4 h-4 ${isConnected ? 'animate-pulse' : ''}`} />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-widest leading-none">
+                    {isConnected ? 'Wallet Connected' : 'No Wallet'}
+                  </span>
+                  {isConnected && (
+                    <span className="text-xs font-bold font-mono leading-none mt-1">
+                      {address.slice(0, 6)}...{address.slice(-4)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Notification Bell */}
+              <div className="relative">
                 <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 text-slate-400 hover:text-primary transition-colors bg-slate-100 rounded-xl"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Logout
+                  <Bell className="w-6 h-6" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
+
+                {/* Notifications Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                      <h3 className="font-bold text-slate-900">Notifications</h3>
+                      <button 
+                        onClick={() => setShowNotifications(false)}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="max-h-[400px] overflow-y-auto">
+                      {notifications.length > 0 ? (
+                        notifications.map((notification) => (
+                          <div 
+                            key={notification.notification_id}
+                            className={`p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors relative group ${
+                              !notification.is_read ? 'bg-primary/5' : ''
+                            }`}
+                          >
+                            <div className="flex gap-3">
+                              <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
+                                notification.type === 'WARNING' ? 'bg-amber-500' : 
+                                notification.type === 'ERROR' ? 'bg-red-500' : 
+                                notification.type === 'SUCCESS' ? 'bg-green-500' : 'bg-blue-500'
+                              }`} />
+                              <div className="flex-1">
+                                <h4 className="text-sm font-bold text-slate-900 mb-1">{notification.title}</h4>
+                                <p className="text-xs text-slate-600 mb-2 leading-relaxed">{notification.message}</p>
+                                <div className="flex items-center gap-4">
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    {new Date(notification.created_at).toLocaleDateString()}
+                                  </span>
+                                  {notification.link && (
+                                    <Link 
+                                      to={notification.link}
+                                      onClick={() => {
+                                        markNotificationAsRead(notification.notification_id);
+                                        setShowNotifications(false);
+                                      }}
+                                      className="text-[10px] text-primary font-bold hover:underline"
+                                    >
+                                      View Details
+                                    </Link>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!notification.is_read && (
+                                <button 
+                                  onClick={() => markNotificationAsRead(notification.notification_id)}
+                                  className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                  title="Mark as read"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                              )}
+                              <button 
+                                onClick={() => deleteNotification(notification.notification_id)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-slate-400">
+                          <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                          <p className="text-sm">No notifications yet</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative group">
+                <button
+                  type="button"
+                  className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-100 sm:px-4"
+                >
+                  <UserCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Account</span>
+                </button>
+                <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 absolute right-0 top-full mt-2 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200/70">
+                  <Link
+                    to="/ngo/profile"
+                    className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Profile settings
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
               </div>
             </div>
           </div>

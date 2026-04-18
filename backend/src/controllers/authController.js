@@ -9,6 +9,7 @@ const {
 } = require('../services/userService');
 const { hashPassword, comparePassword, generateToken, formatResponse } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
+const notificationService = require('../services/notificationService');
 
 // Register user
 const register = async (req, res, next) => {
@@ -109,6 +110,11 @@ const getProfile = async (req, res, next) => {
     
     if (!user) {
       return res.status(404).json(formatResponse(false, 'User not found'));
+    }
+
+    // If NGO, check if wallet is set and create notification if not
+    if (user.role === 'NGO') {
+      await notificationService.checkAndCreateWalletNotification(userId, user.wallet_address);
     }
 
     res.json(formatResponse(true, 'Profile retrieved successfully', { user }));

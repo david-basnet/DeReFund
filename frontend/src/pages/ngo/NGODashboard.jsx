@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom';
 import { campaignAPI, donationAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import NGOLayout from '../../components/NGOLayout';
+import { useAccount } from 'wagmi';
 import { 
   FileText, DollarSign, Users, TrendingUp, 
-  AlertCircle, CheckCircle2, Clock, BarChart3
+  AlertCircle, CheckCircle2, Clock, BarChart3, Wallet
 } from 'lucide-react';
 
 const NGODashboard = () => {
   const { user } = useAuth();
+  const { address, isConnected } = useAccount();
   const [stats, setStats] = useState({
     totalRaised: 0,
     totalCampaigns: 0,

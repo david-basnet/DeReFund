@@ -22,6 +22,16 @@ export const publicAPI = {
   },
   getCampaign: (campaignId) => publicFetch(`/campaigns/public/${campaignId}`),
   getVerifiedNgos: () => publicFetch('/campaigns/public/verified-ngos'),
+  getEthPrice: async () => {
+    try {
+      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const data = await response.json();
+      return data.ethereum.usd;
+    } catch (error) {
+      console.error('Failed to fetch ETH price:', error);
+      return 2500; // Fallback price
+    }
+  },
 };
 
 // Helper function to get auth token
@@ -136,6 +146,10 @@ export const campaignAPI = {
 // Donation API
 export const donationAPI = {
   create: (donationData) => apiCall('/donations', { method: 'POST', body: JSON.stringify(donationData) }),
+  getAll: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return publicFetch(`/donations/all${queryString ? `?${queryString}` : ''}`);
+  },
   getByCampaign: (campaignId, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return apiCall(`/donations/campaign/${campaignId}${queryString ? `?${queryString}` : ''}`);
@@ -183,6 +197,13 @@ export const volunteerVerificationAPI = {
   },
   getCampaignVerificationStatus: (campaignId) => apiCall(`/volunteer-verification/campaign/${campaignId}`),
   verifyCampaign: (campaignId) => apiCall(`/volunteer-verification/campaign/${campaignId}/verify`, { method: 'POST' }),
+};
+
+// Notification API
+export const notificationAPI = {
+  getAll: () => apiCall('/notifications'),
+  markAsRead: (notificationId) => apiCall(`/notifications/${notificationId}/read`, { method: 'PATCH' }),
+  delete: (notificationId) => apiCall(`/notifications/${notificationId}`, { method: 'DELETE' }),
 };
 
 // Upload API
