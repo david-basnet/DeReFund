@@ -2,12 +2,23 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, FileText, DollarSign, BarChart3, Settings,
-  LogOut, X, Building2, AlertCircle, CheckCircle2, Plus
+  LayoutDashboard,
+  FileText,
+  DollarSign,
+  BarChart3,
+  Settings,
+  LogOut,
+  Building2,
+  AlertCircle,
+  Plus,
+  Menu,
+  UserCircle,
+  X,
 } from 'lucide-react';
 
 const NGOLayout = ({ children }) => {
-  const [sidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -15,6 +26,25 @@ const NGOLayout = ({ children }) => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setSidebarOpen(!mobile);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, isMobile]);
 
   const handleLogout = () => {
     logout();
@@ -25,6 +55,7 @@ const NGOLayout = ({ children }) => {
     { path: '/ngo', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/ngo/campaigns', icon: FileText, label: 'My Campaigns' },
     { path: '/ngo/create-campaign', icon: Plus, label: 'Create Campaign' },
+    { path: '/ngo/disasters/report', icon: AlertCircle, label: 'Disaster Management' },
     { path: '/ngo/donations', icon: DollarSign, label: 'Donations' },
     { path: '/ngo/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/ngo/profile', icon: Settings, label: 'Profile' },
@@ -150,7 +181,7 @@ const NGOLayout = ({ children }) => {
   }, [user, hasCheckedNotification]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-light-purple-50 flex">
+    <div className="min-h-screen bg-gray-50">
       {/* Rejection Notification Popup */}
       {showRejectionNotification && verificationStatus === 'REJECTED' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
@@ -166,23 +197,23 @@ const NGOLayout = ({ children }) => {
                 <AlertCircle className="w-8 h-8 text-red-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-black mb-2 font-playfair tracking-tight">
+                <h3 className="text-xl font-bold text-black mb-2 tracking-tight">
                   Verification Rejected
                 </h3>
-                <p className="text-gray-700 mb-4 font-dmsans tracking-tight">
+                <p className="text-gray-700 mb-4 tracking-tight">
                   Your verification documents have been rejected. Please review and resubmit your documents with the necessary corrections.
                 </p>
                 <div className="flex gap-3">
                   <Link
                     to="/ngo/profile"
                     onClick={() => setShowRejectionNotification(false)}
-                    className="flex-1 bg-purple text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-center font-bold font-dmsans tracking-tight"
+                    className="flex-1 bg-primary text-on-primary px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-center font-bold tracking-tight"
                   >
                     Go to Profile
                   </Link>
                   <button
                     onClick={() => setShowRejectionNotification(false)}
-                    className="px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors font-bold font-dmsans tracking-tight"
+                    className="px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors font-bold tracking-tight"
                   >
                     Dismiss
                   </button>
@@ -192,116 +223,186 @@ const NGOLayout = ({ children }) => {
           </div>
         </div>
       )}
+
+      {isMobile && sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar overlay"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-[1px] lg:hidden"
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`bg-gradient-to-b from-purple to-light-purple text-white transition-all duration-300 ${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } fixed left-0 top-0 h-screen z-50 flex flex-col`}
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden bg-gradient-to-b from-[#022649] via-[#032f55] to-[#001a38] text-white shadow-2xl transition-all duration-300 ${
+          isMobile
+            ? sidebarOpen
+              ? 'w-72 translate-x-0'
+              : 'w-72 -translate-x-full'
+            : sidebarOpen
+              ? 'w-64'
+              : 'w-20'
+        }`}
       >
-        {/* Sidebar Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-purple-300/30">
-          {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <span className="font-bold text-lg font-playfair tracking-tight">NGO Portal</span>
+        <div className="flex flex-col h-full">
+          {/* Logo/Header */}
+          <div className="border-b border-white/10 px-3 py-3">
+            <div
+              className={`flex items-center gap-2 ${
+                sidebarOpen ? 'justify-between' : 'justify-center'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setSidebarOpen((open) => !open)}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 transition-colors hover:bg-white/20"
+                aria-label="Toggle sidebar"
+              >
+                <Menu className="h-5 w-5 text-white" />
+              </button>
+              {sidebarOpen && (
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <div className="min-w-0">
+                    <h1 className="truncate text-sm font-semibold tracking-tight text-white">
+                      NGO Portal
+                    </h1>
+                    <p className="truncate text-[11px] text-white/80">Quick access</p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-          {!sidebarOpen && (
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mx-auto">
-              <Building2 className="w-5 h-5" />
-            </div>
-          )}
-        </div>
-
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          <div className="px-2 space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                    active
-                      ? 'bg-white/20 text-white shadow-lg'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-white' : ''}`} />
-                  {sidebarOpen && (
-                    <span className="font-medium font-dmsans tracking-tight flex-1">{item.label}</span>
-                  )}
-                </Link>
-              );
-            })}
           </div>
-        </nav>
 
-        {/* User Section */}
-        <div className="border-t border-purple-300/30 p-4">
-          {sidebarOpen ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 px-2 py-2">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-bold text-white font-dmsans tracking-tight">
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <ul className="space-y-2">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.path);
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      className={`flex items-center rounded-2xl transition-all duration-200 ${
+                        sidebarOpen
+                          ? 'gap-3 px-4 py-3 justify-start'
+                          : 'justify-center px-0 py-3'
+                      } ${
+                        active
+                          ? 'bg-white/20 text-white shadow-lg'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                      {sidebarOpen && (
+                        <span className="truncate text-sm font-medium tracking-tight">
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+
+          {/* User Info & Logout (Desktop Sidebar Bottom) */}
+          <div className="border-t border-white/20 px-3 py-4">
+            {sidebarOpen && (
+              <div className="flex items-center gap-3 px-2 py-2 mb-4">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0 border border-white/10">
+                  <span className="text-sm font-bold text-white tracking-tight">
                     {user?.name?.charAt(0).toUpperCase() || 'N'}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-black truncate font-dmsans tracking-tight">
+                  <div className="text-sm font-bold text-white truncate tracking-tight">
                     {user?.name || 'NGO'}
                   </div>
-                  <div className="text-xs font-medium text-black truncate font-dmsans tracking-tight">
+                  <div className="text-xs font-medium text-white/60 truncate tracking-tight">
                     {user?.email || 'ngo@example.com'}
                   </div>
                 </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-2 text-white hover:bg-white/10 rounded-lg transition-colors font-dmsans tracking-tight"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="font-bold">Logout</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <span className="text-sm font-bold text-white font-dmsans tracking-tight">
-                  {user?.name?.charAt(0).toUpperCase() || 'N'}
-                </span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 text-white/80 hover:bg-white/10 rounded-lg transition-colors"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
-          )}
+            )}
+            <button
+              onClick={handleLogout}
+              className={`inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-all duration-200 hover:bg-white/20 ${
+                sidebarOpen
+                  ? 'w-full gap-2 px-3 py-2 text-[13px] font-medium'
+                  : 'h-11 w-full px-0'
+              }`}
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              {sidebarOpen && <span>Logout</span>}
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
-        {/* Top Bar */}
-        <header className="bg-white border-b border-purple-100 h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40 shadow-sm">
-          <div className="flex-1"></div>
-          <div className="flex items-center gap-4">
+      <main
+        className={`min-h-screen transition-all duration-300 ${
+          isMobile ? 'ml-0' : sidebarOpen ? 'ml-64' : 'ml-20'
+        }`}
+      >
+        <div className="sticky top-0 z-20 bg-white/95 shadow-sm border-b border-slate-200/10 backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#022649] text-white shadow-sm transition-colors hover:bg-[#03325d] lg:hidden"
+                  aria-label="Open sidebar"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+              )}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-primary">
+                <UserCircle className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {user?.name || 'NGO'}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {user?.email || 'ngo@example.com'}
+                </p>
+              </div>
+            </div>
+            <div className="relative group shrink-0">
+              <button
+                type="button"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-100 sm:px-4"
+              >
+                <UserCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Account</span>
+              </button>
+              <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 absolute right-0 top-full mt-2 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200/70">
+                <Link
+                  to="/ngo/profile"
+                  className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Settings className="w-4 h-4" />
+                  Profile settings
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </div>
+            </div>
           </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="min-h-[calc(100vh-4rem)]">
+        </div>
+        <div className="min-h-screen px-4 py-4 sm:px-5">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

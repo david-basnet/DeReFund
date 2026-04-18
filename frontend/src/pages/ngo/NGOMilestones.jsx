@@ -103,8 +103,8 @@ const NGOMilestones = () => {
       <Layout>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-black mb-4 font-playfair tracking-tight">Access Denied</h2>
-            <p className="text-gray-800 font-dmsans tracking-tight">This page is only available for NGOs.</p>
+            <h2 className="text-2xl font-bold text-black mb-4 tracking-tight">Access Denied</h2>
+            <p className="text-gray-800 tracking-tight">This page is only available for NGOs.</p>
           </div>
         </div>
       </Layout>
@@ -122,21 +122,21 @@ const NGOMilestones = () => {
                 <div className="p-3 bg-gradient-to-br from-purple to-light-purple rounded-xl shadow-md">
                   <Flag className="h-6 w-6 text-white" />
                 </div>
-                <h1 className="text-5xl font-bold text-black font-playfair tracking-tight leading-tight">Milestones</h1>
+                <h1 className="text-5xl font-bold text-black tracking-tight leading-tight">Milestones</h1>
               </div>
-              <p className="text-gray-800 font-dmsans tracking-tight ml-14">Manage milestones across all your campaigns</p>
+              <p className="text-gray-800 tracking-tight ml-14">Manage milestones across all your campaigns</p>
             </div>
           </div>
 
           {/* Filter */}
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-            <label className="block text-sm font-medium text-black mb-2 font-dmsans tracking-tight">
+            <label className="block text-sm font-medium text-black mb-2 tracking-tight">
               Filter by Campaign
             </label>
             <select
               value={selectedCampaign}
               onChange={(e) => setSelectedCampaign(e.target.value)}
-              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple focus:border-transparent text-black font-dmsans tracking-tight"
+              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple focus:border-transparent text-black tracking-tight"
             >
               <option value="ALL">All Campaigns</option>
               {campaigns.map((campaign) => (
@@ -151,7 +151,7 @@ const NGOMilestones = () => {
           {loading ? (
             <div className="text-center py-16 animate-fade-in">
               <Loader2 className="inline-block animate-spin h-16 w-16 text-purple mb-4" />
-              <p className="text-gray-800 font-dmsans tracking-tight">Loading milestones...</p>
+              <p className="text-gray-800 tracking-tight">Loading milestones...</p>
             </div>
           ) : filteredMilestones.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl shadow-lg animate-fade-in">
@@ -160,10 +160,10 @@ const NGOMilestones = () => {
                   <Flag className="h-16 w-16 text-purple/30" />
                 </div>
               </div>
-              <p className="text-gray-800 mb-6 font-dmsans text-lg tracking-tight">No milestones found.</p>
+              <p className="text-gray-800 mb-6 text-lg tracking-tight">No milestones found.</p>
               <Link
                 to="/ngo/create-campaign"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple to-light-purple text-white px-8 py-4 rounded-xl font-bold hover-lift shadow-lg transition-all duration-300 font-dmsans tracking-tight"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple to-light-purple text-white px-8 py-4 rounded-xl font-bold hover-lift shadow-lg transition-all duration-300 tracking-tight"
               >
                 <Plus className="h-5 w-5" />
                 Create Campaign
@@ -181,20 +181,20 @@ const NGOMilestones = () => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-4 mb-4">
                         <div className="w-14 h-14 bg-gradient-to-br from-purple to-light-purple rounded-full flex items-center justify-center font-bold shadow-md">
-                          <span className="text-white font-dmsans text-lg">{milestone.order_index || index + 1}</span>
+                          <span className="text-white text-lg">{milestone.order_index || index + 1}</span>
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-black font-playfair tracking-tight leading-tight">{milestone.title}</h3>
+                          <h3 className="text-xl font-bold text-black tracking-tight leading-tight">{milestone.title}</h3>
                           <Link
                             to={`/campaigns/${milestone.campaign_id}`}
-                            className="text-sm text-purple hover:text-light-purple underline-animate font-dmsans tracking-tight"
+                            className="text-sm text-purple hover:text-light-purple underline-animate tracking-tight"
                           >
                             {milestone.campaign_title}
                           </Link>
                         </div>
                       </div>
-                      <p className="text-gray-800 mb-4 font-dmsans tracking-tight leading-relaxed">{milestone.description}</p>
-                      <div className="flex items-center space-x-6 text-sm font-dmsans tracking-tight">
+                      <p className="text-gray-800 mb-4 tracking-tight leading-relaxed">{milestone.description}</p>
+                      <div className="flex items-center space-x-6 text-sm tracking-tight">
                         <div className="flex items-center gap-2">
                           <span className="text-gray-800">Amount to Release:</span>
                           <span className="font-bold text-black">
@@ -211,20 +211,20 @@ const NGOMilestones = () => {
                     </div>
                     <div className="flex flex-col space-y-2 ml-4">
                       {milestone.status === 'PENDING' && (
-                        <button className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple to-light-purple text-white rounded-xl hover-lift shadow-md transition-all duration-300 text-sm font-bold font-dmsans tracking-tight">
+                        <button className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple to-light-purple text-white rounded-xl hover-lift shadow-md transition-all duration-300 text-sm font-bold tracking-tight">
                           <Upload className="h-4 w-4" />
                           Submit
                         </button>
                       )}
                       {milestone.status === 'SUBMITTED' && (
-                        <button className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-dark-green to-dark-green/80 text-white rounded-xl hover-lift shadow-md transition-all duration-300 text-sm font-bold font-dmsans tracking-tight">
+                        <button className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-dark-green to-dark-green/80 text-white rounded-xl hover-lift shadow-md transition-all duration-300 text-sm font-bold tracking-tight">
                           <Upload className="h-4 w-4" />
                           Upload Proof
                         </button>
                       )}
                       <Link
                         to={`/ngo/campaigns/${milestone.campaign_id}`}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray text-gray-800 rounded-xl hover:bg-gray-800 hover:text-white transition-all duration-300 text-sm font-bold font-dmsans tracking-tight text-center"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray text-gray-800 rounded-xl hover:bg-gray-800 hover:text-white transition-all duration-300 text-sm font-bold tracking-tight text-center"
                       >
                         <Eye className="h-4 w-4" />
                         View Campaign

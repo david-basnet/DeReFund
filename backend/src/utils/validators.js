@@ -46,7 +46,30 @@ const validateLogin = [
   handleValidationErrors
 ];
 
-// Campaign validation
+const optionalHttpsUrls = (field = 'image_urls') =>
+  body(field)
+    .optional()
+    .custom((value) => {
+      if (value == null || value === '') return true;
+      const list = Array.isArray(value)
+        ? value
+        : String(value)
+            .split(/[\n,]+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+      for (const u of list) {
+        try {
+          const parsed = new URL(u);
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+        } catch {
+          return false;
+        }
+      }
+      return true;
+    })
+    .withMessage('Each image URL must be a valid http(s) address');
+
+// Campaign validation (NGO creates — no ngo_id in body)
 const validateCampaign = [
   body('title')
     .trim()
@@ -64,6 +87,41 @@ const validateCampaign = [
     .withMessage('A disaster case must be selected')
     .isUUID()
     .withMessage('Invalid case ID format'),
+  optionalHttpsUrls('image_urls'),
+  handleValidationErrors
+];
+
+// Donor-proposed campaign: must pick verified NGO to fulfill
+const validateDonorCampaign = [
+  body('title')
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Title must be between 5 and 200 characters'),
+  body('description')
+    .trim()
+    .isLength({ min: 20 })
+    .withMessage('Description must be at least 20 characters'),
+  body('target_amount')
+    .isFloat({ min: 0.01 })
+    .withMessage('Target amount must be greater than 0'),
+  body('case_id')
+    .notEmpty()
+    .withMessage('A disaster case must be selected')
+    .isUUID()
+    .withMessage('Invalid case ID format'),
+  body('ngo_id')
+    .notEmpty()
+    .withMessage('You must select a verified NGO partner')
+    .isUUID()
+    .withMessage('Invalid NGO id'),
+  optionalHttpsUrls('image_urls'),
+  handleValidationErrors
+];
+
+const validateNgoCampaignDecision = [
+  body('approved')
+    .isBoolean()
+    .withMessage('approved must be true or false'),
   handleValidationErrors
 ];
 
@@ -131,6 +189,8 @@ module.exports = {
   validateRegister,
   validateLogin,
   validateCampaign,
+  validateDonorCampaign,
+  validateNgoCampaignDecision,
   validateDisasterCase,
   validateMilestone,
   validateDonation

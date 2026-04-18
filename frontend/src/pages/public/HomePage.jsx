@@ -1,193 +1,523 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence, animate, motion, useInView } from 'framer-motion';
+import {
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+  Heart,
+  Images,
+  ListChecks,
+  ShieldCheck,
+  Wallet,
+} from 'lucide-react';
+import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
+import { assets } from '../../assets/assets';
+import { publicAPI } from '../../utils/api';
+
+const HERO_SLIDES = [
+  {
+    src: assets.hero1,
+    badge: 'Global disaster response',
+    title: 'Relief that moves at the speed of trust.',
+    description:
+      'Blockchain-linked donations meet verified NGO milestones—from flood zones to wildfire lines—with transparency you can audit.',
+  },
+  {
+    src: assets.hero2,
+    badge: 'Transparent dashboards',
+    title: 'Every dollar. Every milestone. Verified.',
+    description:
+      'Track funds released, shelter supplies, and proof-of-impact media in one place—no black boxes, no guesswork.',
+  },
+  {
+    src: assets.hero3,
+    badge: 'Wallet to last mile',
+    title: 'Connect your wallet. Fund real recovery.',
+    description:
+      'MetaMask-ready flows, milestone-locked escrow, and humanitarian aid built for donors who demand proof—not promises.',
+  },
+];
+
+/** Auto-advance slideshow interval */
+const HERO_SLIDE_INTERVAL_MS = 7000;
+
+const MISSION_PILLARS = [
+  {
+    title: 'Verified milestones',
+    hint: 'Proof before funds move',
+    Icon: ListChecks,
+  },
+  {
+    title: 'Traceable flow',
+    hint: 'Wallet to last mile',
+    Icon: Wallet,
+  },
+  {
+    title: 'Visible impact',
+    hint: 'Dashboards & proof media',
+    Icon: Images,
+  },
+];
+
+const missionStaggerParent = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.09, delayChildren: 0.06 },
+  },
+};
+
+const missionStaggerChild = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.48, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+const HOW_IT_WORKS = {
+  donor: {
+    blurb:
+      'Find vetted campaigns, give securely, and watch funds unlock only when milestones are met.',
+    steps: [
+      {
+        icon: 'search_insights',
+        title: '1. Choose & verify',
+        description:
+          'Support live campaigns. Donor proposals are confirmed by a partner NGO; NGO-created campaigns are reviewed by admins before publishing.',
+      },
+      {
+        icon: 'payments',
+        title: '2. Donate',
+        description:
+          'Pay with familiar methods or your wallet. Contributions stay in milestone-based escrow until proof is posted.',
+      },
+      {
+        icon: 'monitoring',
+        title: '3. Track impact',
+        description:
+          'Follow releases, supplies, and proof-of-impact updates as NGOs hit transparent recovery checkpoints.',
+      },
+    ],
+  },
+  ngo: {
+    blurb:
+      'Join as a verified partner, structure relief into milestones, and access funds as you prove delivery.',
+    steps: [
+      {
+        icon: 'badge',
+        title: '1. Apply & verify',
+        description:
+          'Submit your organization for review. Once approved, you can publish campaigns tied to real relief work.',
+      },
+      {
+        icon: 'flag',
+        title: '2. Plan milestones',
+        description:
+          'Define funding targets and recovery checkpoints. Donations lock in escrow and align with what donors see in the dashboard.',
+      },
+      {
+        icon: 'photo_library',
+        title: '3. Prove & receive',
+        description:
+          'Document delivery with updates and media. Verified milestones trigger releases—fast for you, transparent for donors.',
+      },
+    ],
+  },
+};
+
+function ImpactStatValue({ inView, target, format, className }) {
+  const [text, setText] = useState(() => (target == null ? '—' : format(0)));
+  const animationRef = useRef(null);
+
+  useEffect(() => {
+    if (animationRef.current) {
+      animationRef.current.stop?.();
+      animationRef.current = null;
+    }
+
+    if (target == null) {
+      setText('—');
+      return;
+    }
+
+    if (!inView) {
+      setText(format(0));
+      return;
+    }
+
+    animationRef.current = animate(0, target, {
+      duration: 1.6,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (v) => setText(format(v)),
+    });
+
+    return () => animationRef.current?.stop?.();
+  }, [inView, target, format]);
+
+  return (
+    <p className={className} aria-live="polite">
+      {text}
+    </p>
+  );
+}
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const [heroSlideIdx, setHeroSlideIdx] = useState(0);
+  const [howAudience, setHowAudience] = useState('donor');
+  const [impact, setImpact] = useState(null);
+  const [homeCampaigns, setHomeCampaigns] = useState([]);
+  const impactStatsRef = useRef(null);
+  const impactStatsInView = useInView(impactStatsRef, { once: false, amount: 0.4 });
+
+  useEffect(() => {
+    publicAPI
+      .impactStats()
+      .then((res) => setImpact(res.data || res))
+      .catch(() => setImpact(null));
+    publicAPI
+      .getCampaigns({ page: 1, limit: 3 })
+      .then((res) => {
+        const list = res.data?.campaigns || res.campaigns || [];
+        setHomeCampaigns(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setHomeCampaigns([]));
+  }, []);
+
+  const goNext = useCallback(() => {
+    setHeroSlideIdx((i) => (i + 1) % HERO_SLIDES.length);
+  }, []);
+
+  const goPrev = useCallback(() => {
+    setHeroSlideIdx((i) => (i - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  }, []);
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, []);
 
-  return (
-    <div className="bg-surface text-on-surface antialiased">
-      {/* TopNavBar (exact Stitch layout) */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm">
-        <div className="flex justify-between items-center px-6 py-4 max-w-screen-2xl mx-auto">
-          <div className="flex items-center gap-8">
-            <span className="text-2xl font-black tracking-tighter text-blue-700 dark:text-blue-400">
-              DeReFund
-            </span>
-            <div className="hidden md:flex gap-6 items-center">
-              <a className="font-sans text-sm font-medium text-blue-700 dark:text-blue-400 border-b-2 border-blue-700 dark:border-blue-400 pb-1">
-                Browse
-              </a>
-              <a className="font-sans text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 transition-colors">
-                Disasters
-              </a>
-              <a className="font-sans text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 transition-colors">
-                About Us
-              </a>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center bg-surface-container-high px-3 py-1.5 rounded-lg mr-2">
-              <span className="material-symbols-outlined text-outline text-sm mr-2">search</span>
-              <input
-                className="bg-transparent border-none focus:ring-0 text-sm w-48"
-                placeholder="Search relief efforts..."
-                type="text"
-              />
-            </div>
-            <button className="hidden lg:block font-sans text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors px-4 py-2 rounded-md active:scale-95 duration-150">
-              Sign In
-            </button>
-            <button className="primary-gradient text-white px-5 py-2.5 rounded-md text-sm font-bold active:scale-95 duration-150 shadow-md">
-              Donate Now
-            </button>
-            <button className="p-2 text-slate-600">
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-          </div>
-        </div>
-        <div className="bg-slate-100 dark:bg-slate-800 h-px w-full" />
-      </nav>
+  useEffect(() => {
+    const id = setInterval(goNext, HERO_SLIDE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [goNext]);
 
-      <main className="pt-20">
-        {/* Hero Section */}
-        <section className="relative min-h-[870px] flex items-center overflow-hidden bg-surface">
-          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-            <div className="lg:col-span-6">
-              <span className="inline-block bg-tertiary-container text-white px-3 py-1 rounded-sm text-[10px] font-bold tracking-widest uppercase mb-6">
-                Active Emergency Response
-              </span>
-              <h1 className="text-6xl md:text-7xl font-extrabold tracking-tighter text-on-surface mb-6 leading-[0.95]">
-                Rebuilding <span className="text-primary">Communities</span> Together.
-              </h1>
-              <p className="text-lg text-on-surface-variant leading-relaxed mb-10 max-w-xl">
-                A decentralized humanitarian engine designed to deliver direct financial relief to disaster zones with
-                radical transparency and verified impact.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <button className="primary-gradient text-on-primary px-8 py-4 rounded-md font-bold text-lg shadow-ambient hover:-translate-y-0.5 transition-transform">
+  const slide = HERO_SLIDES[heroSlideIdx];
+
+  return (
+    <div className="flex min-h-screen flex-col bg-surface text-on-surface antialiased">
+      <Navbar />
+
+      <main className="flex-1 pt-20">
+        {/* Hero — split: left copy on light surface, right slideshow card (clearly different from full-bleed) */}
+        <section className="border-b border-outline-variant/20 bg-surface">
+          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-12 lg:grid-cols-2 lg:gap-14 lg:py-16">
+            {/* Left: messaging */}
+            <div className="order-2 text-left lg:order-1">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={slide.badge}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <span className="mb-4 inline-block rounded-md bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                    {slide.badge}
+                  </span>
+                  <h1 className="mb-5 text-4xl font-extrabold leading-[1.08] tracking-tighter text-on-surface md:text-5xl lg:text-[2.75rem]">
+                    {slide.title}
+                  </h1>
+                  <p className="mb-8 max-w-xl text-lg leading-relaxed text-on-surface-variant md:text-xl">
+                    {slide.description}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/campaigns')}
+                  className="primary-gradient rounded-lg px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:-translate-y-0.5 md:px-8 md:py-4 md:text-lg"
+                >
                   Donate Now
                 </button>
-                <button className="bg-surface-container-highest text-on-surface px-8 py-4 rounded-md font-bold text-lg hover:bg-surface-dim transition-colors">
+                <button
+                  type="button"
+                  onClick={() => navigate('/about')}
+                  className="rounded-lg border border-outline-variant bg-surface-container-highest px-7 py-3.5 text-base font-semibold text-on-surface transition hover:bg-surface-dim md:px-8 md:py-4 md:text-lg"
+                >
                   Join as NGO
                 </button>
               </div>
+
+              <div className="mt-8 flex items-center gap-2">
+                {HERO_SLIDES.map((s, i) => (
+                  <button
+                    key={s.badge}
+                    type="button"
+                    aria-label={`Slide ${i + 1}`}
+                    aria-current={i === heroSlideIdx ? 'true' : undefined}
+                    onClick={() => setHeroSlideIdx(i)}
+                    className={`h-2 rounded-full transition-all ${
+                      i === heroSlideIdx ? 'w-10 bg-primary' : 'w-2 bg-outline-variant hover:bg-outline'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
 
-            <div className="lg:col-span-6 relative">
-              <div className="relative w-full aspect-square rounded-full overflow-hidden shadow-2xl border-8 border-white/20">
-                <img
-                  className="w-full h-full object-cover"
-                  alt="Volunteers handing out food and supplies in a recovering community"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXTujlp-478kv2ATlvifAn-h6keT0huSM6HljYFNWqrnyv1DP2h-IVbIV9CqO3nWOONz8Fo7MUvinnxIsUuFGF1cLLmi07YuLYC6PSqycTg83I_D8EouW7lppPp6uGZ4txt0dcvrW9tcM3BkEYv6ZDT1sEK59gFCNmu0Ty20Xmy9B45SkFVfp64y0hBhZjzy4eY2OcOhE6pFO4i7A5nS-fRYzRV4i4CCjOhjW2Ib3pxZQlz0V-7LMtPHI1gbL1e_82aAV0I5IefD4"
+            {/* Right: slideshow only inside this frame */}
+            <div className="order-1 lg:order-2">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-[#020a14] shadow-xl ring-1 ring-outline-variant/40 lg:aspect-[5/4] lg:min-h-[380px]">
+                <AnimatePresence initial={false} mode="sync">
+                  <motion.div
+                    key={heroSlideIdx}
+                    className="absolute inset-0"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <img
+                      src={slide.src}
+                      alt=""
+                      className="h-full w-full object-cover object-center"
+                      loading={heroSlideIdx === 0 ? 'eager' : 'lazy'}
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+                  </motion.div>
+                </AnimatePresence>
+
+                <button
+                  type="button"
+                  onClick={goPrev}
+                  className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/55"
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/55"
+                  aria-label="Next slide"
+                >
+                  <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Impact Stats — compact card; count-up resets and replays each time section enters view */}
+        <section className="relative z-10 mt-6 px-6 pb-1">
+          <div
+            ref={impactStatsRef}
+            className="mx-auto max-w-7xl rounded-xl border border-outline-variant/15 bg-surface-container-lowest py-5 shadow-ambient md:py-6"
+          >
+            <div className="grid grid-cols-1 gap-6 px-4 text-center md:grid-cols-3 md:gap-8 md:px-6 lg:px-8">
+              <div className="flex flex-col items-center">
+                <div
+                  className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/20"
+                  aria-hidden
+                >
+                  <DollarSign className="h-5 w-5" strokeWidth={2} />
+                </div>
+                <ImpactStatValue
+                  inView={impactStatsInView}
+                  target={impact ? Number(impact.totalRaised) || 0 : null}
+                  format={(n) => `$${Math.round(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+                  className="mb-0.5 text-4xl font-black tabular-nums tracking-tighter md:text-[2.5rem] text-primary"
                 />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-outline sm:text-xs">Total raised (platform)</p>
               </div>
+              <div className="flex flex-col items-center">
+                <div
+                  className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/12 text-secondary ring-1 ring-secondary/25"
+                  aria-hidden
+                >
+                  <Heart className="h-5 w-5" strokeWidth={2} />
+                </div>
+                <ImpactStatValue
+                  inView={impactStatsInView}
+                  target={impact ? Number(impact.donationCount) || 0 : null}
+                  format={(n) => Math.round(n).toLocaleString()}
+                  className="mb-0.5 text-4xl font-black tabular-nums tracking-tighter md:text-[2.5rem] text-secondary"
+                />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-outline sm:text-xs">Donations recorded</p>
+              </div>
+              <div className="flex flex-col items-center">
+                <div
+                  className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-on-surface/8 text-on-surface ring-1 ring-outline-variant/40"
+                  aria-hidden
+                >
+                  <ShieldCheck className="h-5 w-5" strokeWidth={2} />
+                </div>
+                <ImpactStatValue
+                  inView={impactStatsInView}
+                  target={impact ? Number(impact.verifiedNgos) || 0 : null}
+                  format={(n) => `${Math.round(n)}`}
+                  className="mb-0.5 text-4xl font-black tabular-nums tracking-tighter md:text-[2.5rem] text-on-surface"
+                />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-outline sm:text-xs">Verified NGOs</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-              <div className="absolute -bottom-6 -left-6 glass-panel p-6 rounded-xl shadow-ambient max-w-xs border border-white/30">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
-                    <span className="material-symbols-outlined">verified_user</span>
+        {/* Mission — short copy, pillars, light motion; not a wall of text */}
+        <motion.section
+          className="border-t border-outline-variant/15 bg-surface-container-low/35 px-6 pt-16 pb-8 md:pt-20 md:pb-10"
+          variants={missionStaggerParent}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.22 }}
+        >
+          <div className="mx-auto max-w-4xl">
+            <motion.div variants={missionStaggerChild} className="text-center">
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary sm:text-xs">
+                Our mission
+              </h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-snug text-on-surface-variant md:text-base">
+                Transparency-first relief for donors, NGOs, and the communities they serve.
+              </p>
+            </motion.div>
+
+            <motion.h3
+              variants={missionStaggerChild}
+              className="mx-auto mt-8 max-w-3xl text-center text-3xl font-bold leading-[1.15] tracking-tight text-on-surface md:text-4xl md:leading-[1.12]"
+            >
+              We bridge global empathy and local action.
+            </motion.h3>
+            <motion.p
+              variants={missionStaggerChild}
+              className="mx-auto mt-4 max-w-2xl text-center text-[15px] leading-relaxed text-on-surface-variant md:text-base"
+            >
+              Every contribution moves through verified milestones—you see progress, not promises.
+            </motion.p>
+
+            <motion.div
+              variants={missionStaggerChild}
+              className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4"
+            >
+              {MISSION_PILLARS.map(({ title, hint, Icon }) => (
+                <div
+                  key={title}
+                  className="flex gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-lowest/90 px-4 py-3.5 text-left shadow-sm backdrop-blur-sm"
+                >
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/15"
+                    aria-hidden
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={2} />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-outline uppercase tracking-widest">Verified NGO</p>
-                    <p className="font-bold text-on-surface">Red Cross Alliance</p>
+                  <div className="min-w-0 pt-0.5">
+                    <p className="text-sm font-bold leading-tight text-on-surface">{title}</p>
+                    <p className="mt-0.5 text-xs leading-snug text-on-surface-variant">{hint}</p>
                   </div>
                 </div>
-                <p className="text-sm text-on-surface-variant italic">
-                  &quot;DeReFund accelerated our ground response by 40% in the last cyclone.&quot;
-                </p>
-              </div>
-            </div>
+              ))}
+            </motion.div>
+
+            <motion.div
+              variants={missionStaggerChild}
+              className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-8"
+            >
+              <div className="h-1 w-20 shrink-0 rounded-full bg-primary md:w-24" aria-hidden />
+              <Link
+                to="/about"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:gap-2.5 hover:underline"
+              >
+                How we&apos;re different
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </Link>
+            </motion.div>
           </div>
+        </motion.section>
 
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-surface-container-low -skew-x-12 translate-x-1/4 -z-0" />
-        </section>
-
-        {/* Impact Stats */}
-        <section className="py-12 bg-surface-container-lowest relative z-20 -mt-10 mx-6 rounded-xl shadow-ambient border border-outline-variant/10">
-          <div className="max-w-7xl mx-auto px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-              <div>
-                <p className="text-5xl font-black text-primary tracking-tighter mb-2">$14.2M+</p>
-                <p className="text-xs font-bold uppercase tracking-widest text-outline">Total Raised</p>
+        {/* How it Works — tabs switch donor vs NGO steps */}
+        <section className="border-t border-outline-variant/10 bg-surface-container-low px-6 pt-10 pb-16 md:pt-12 md:pb-20">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 flex flex-col gap-6 lg:mb-12 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-xl">
+                <h2 className="mb-3 text-4xl font-black tracking-tighter text-on-surface">How DeReFund works</h2>
+                <motion.p
+                  key={howAudience}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.22 }}
+                  className="text-on-surface-variant"
+                >
+                  {HOW_IT_WORKS[howAudience].blurb}
+                </motion.p>
               </div>
-              <div>
-                <p className="text-5xl font-black text-secondary tracking-tighter mb-2">840K</p>
-                <p className="text-xs font-bold uppercase tracking-widest text-outline">Lives Impacted</p>
-              </div>
-              <div>
-                <p className="text-5xl font-black text-on-surface tracking-tighter mb-2">156</p>
-                <p className="text-xs font-bold uppercase tracking-widest text-outline">Verified NGOs</p>
+              <div
+                className="flex flex-wrap gap-2"
+                role="tablist"
+                aria-label="Choose donor or NGO steps"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  id="how-tab-donor"
+                  aria-selected={howAudience === 'donor'}
+                  aria-controls="how-it-works-panel"
+                  onClick={() => setHowAudience('donor')}
+                  className={`rounded-full border border-black px-4 py-2 text-xs font-bold uppercase tracking-wide transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                    howAudience === 'donor'
+                      ? 'bg-primary text-on-primary shadow-sm'
+                      : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-dim'
+                  }`}
+                >
+                  For donors
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="how-tab-ngo"
+                  aria-selected={howAudience === 'ngo'}
+                  aria-controls="how-it-works-panel"
+                  onClick={() => setHowAudience('ngo')}
+                  className={`rounded-full border border-black px-4 py-2 text-xs font-bold uppercase tracking-wide transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                    howAudience === 'ngo'
+                      ? 'bg-primary text-on-primary shadow-sm'
+                      : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-dim'
+                  }`}
+                >
+                  For NGOs
+                </button>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* Mission Statement */}
-        <section className="py-24 px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-xs font-bold text-primary uppercase tracking-[0.3em] mb-8">Our Mission</h2>
-            <p className="text-4xl md:text-5xl font-bold text-on-surface leading-tight tracking-tight">
-              We bridge the gap between global empathy and local action, ensuring every dollar finds its way to the
-              hands that need it most.
-            </p>
-            <div className="mt-12 h-1 w-24 bg-primary mx-auto" />
-          </div>
-        </section>
-
-        {/* How it Works */}
-        <section className="py-24 bg-surface-container-low px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex justify-between items-end mb-16">
-              <div>
-                <h2 className="text-4xl font-black tracking-tighter mb-4">How DeReFund Works</h2>
-                <p className="text-on-surface-variant max-w-md">
-                  Our dual-ecosystem ensures transparency for donors and rapid deployment for partners.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <span className="px-4 py-2 bg-primary-fixed text-on-primary-fixed rounded-full text-xs font-bold">
-                  FOR DONORS
-                </span>
-                <span className="px-4 py-2 bg-surface-container-highest text-on-surface-variant rounded-full text-xs font-bold">
-                  FOR NGOS
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 group hover:shadow-ambient transition-all">
-                <div className="text-primary mb-6 group-hover:scale-110 transition-transform origin-left">
-                  <span className="material-symbols-outlined text-5xl">search_insights</span>
-                </div>
-                <h3 className="text-xl font-bold mb-4">1. Choose &amp; Verify</h3>
-                <p className="text-on-surface-variant text-sm leading-relaxed">
-                  Browse active disasters and read verified reports from NGOs on the ground. Every campaign is vetted
-                  by our volunteer network.
-                </p>
-              </div>
-
-              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 group hover:shadow-ambient transition-all">
-                <div className="text-primary mb-6 group-hover:scale-110 transition-transform origin-left">
-                  <span className="material-symbols-outlined text-5xl">payments</span>
-                </div>
-                <h3 className="text-xl font-bold mb-4">2. Direct Donation</h3>
-                <p className="text-on-surface-variant text-sm leading-relaxed">
-                  Contribute directly using global or local payment methods. Your funds are locked into milestone-based
-                  smart contracts.
-                </p>
-              </div>
-
-              <div className="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 group hover:shadow-ambient transition-all">
-                <div className="text-primary mb-6 group-hover:scale-110 transition-transform origin-left">
-                  <span className="material-symbols-outlined text-5xl">monitoring</span>
-                </div>
-                <h3 className="text-xl font-bold mb-4">3. Track Impact</h3>
-                <p className="text-on-surface-variant text-sm leading-relaxed">
-                  Receive real-time updates and proof-of-impact photos as the NGO reaches specific recovery milestones.
-                </p>
-              </div>
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={howAudience}
+                id="how-it-works-panel"
+                role="tabpanel"
+                aria-labelledby={howAudience === 'donor' ? 'how-tab-donor' : 'how-tab-ngo'}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                className="grid grid-cols-1 gap-6 md:grid-cols-3"
+              >
+                {HOW_IT_WORKS[howAudience].steps.map((step) => (
+                  <div
+                    key={`${howAudience}-${step.title}`}
+                    className="group rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-6 shadow-sm transition-all hover:shadow-ambient md:p-8"
+                  >
+                    <div className="mb-5 text-primary transition-transform group-hover:scale-110 md:mb-6">
+                      <span className="material-symbols-outlined text-5xl">{step.icon}</span>
+                    </div>
+                    <h3 className="mb-3 text-xl font-bold text-on-surface">{step.title}</h3>
+                    <p className="text-sm leading-relaxed text-on-surface-variant">{step.description}</p>
+                  </div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </section>
 
@@ -196,105 +526,72 @@ const HomePage = () => {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
               <h2 className="text-4xl font-black tracking-tighter">Urgent Relief Efforts</h2>
-              <a className="text-primary font-bold flex items-center gap-2 hover:underline">
+              <Link
+                to="/campaigns"
+                className="flex items-center gap-2 font-semibold text-primary transition hover:underline"
+              >
                 View All Campaigns <span className="material-symbols-outlined">arrow_right_alt</span>
-              </a>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* Card 1 */}
-              <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-ambient transition-all flex flex-col">
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    className="w-full h-full object-cover"
-                    alt="Overhead view of flooded city streets with rescue boats"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1QgNpYfxK3gDjZ4bPULItIiKfqPNgfjj6xHVybP0_jz6_mHQDu9nGHAQMr_GWlZiuAukgwWYoOk2eTByUFKXScSPZfcyyM3puuXS7O1-1uVZLR-RGlvrfTnxC3T0v6T2VuZaHT-hsJ9AaeiHhMg9MhcZUnPS1ok7alx3C75LYSd7sAqqU1nlHGHhilwIeXy42TU1qKb4Y-cGN9HCmmtVDJObuzPit5B3Vhv4gHMAkj8yLsptZyxS2DRHKpxEiemfpntTcX-1OMQ8"
-                  />
-                  <div className="absolute top-4 left-4 bg-tertiary-container text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">
-                    Critical
-                  </div>
-                </div>
-                <div className="p-6 flex-grow">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-bold text-lg leading-tight">
-                      East Java Flash Flood Emergency Response
-                    </h3>
-                    <span className="material-symbols-outlined text-secondary">verified</span>
-                  </div>
-                  <div className="w-full bg-surface-container-high h-2 rounded-full mb-3">
-                    <div className="bg-primary h-full rounded-full" style={{ width: '72%' }} />
-                  </div>
-                  <div className="flex justify-between text-xs font-bold text-outline mb-6">
-                    <span>$144,000 raised</span>
-                    <span className="text-on-surface">72%</span>
-                  </div>
-                  <button className="w-full py-3 bg-surface-container-high text-on-surface font-bold text-sm rounded-md hover:bg-primary hover:text-white transition-colors">
-                    Support Campaign
-                  </button>
-                </div>
-              </div>
-
-              {/* Card 2 */}
-              <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-ambient transition-all flex flex-col">
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    className="w-full h-full object-cover"
-                    alt="Parched cracked earth with a green sprout"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBITK6z9dlLA2phojeSHVm4jS-0fGaJa7V6FRQJDTx1O0tNTih2jJGxpNG4SBX0mZ3ja6inPl7rET2_vj4pS_WqUQ6couRZDQN1rHIeCfq_stls5m6e5JO807xBiXjzkeLUfZlI09LaS4ahOl31CrzkbrswsQ_afyzOuo7CbvszlwMlrivemp7g4HOeXdX7kV8eFXnq4orIwx6ojVrBmjkJ9hh8iyxHGxfggnUfeLR6pNa8fCOWnasyAx7AODy12TY5izBGXmh-mzk"
-                  />
-                  <div className="absolute top-4 left-4 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">
-                    Ongoing
-                  </div>
-                </div>
-                <div className="p-6 flex-grow">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-bold text-lg leading-tight">
-                      Clean Water Access: Sahel Region Drought
-                    </h3>
-                    <span className="material-symbols-outlined text-secondary">verified</span>
-                  </div>
-                  <div className="w-full bg-surface-container-high h-2 rounded-full mb-3">
-                    <div className="bg-primary h-full rounded-full" style={{ width: '45%' }} />
-                  </div>
-                  <div className="flex justify-between text-xs font-bold text-outline mb-6">
-                    <span>$89,200 raised</span>
-                    <span className="text-on-surface">45%</span>
-                  </div>
-                  <button className="w-full py-3 bg-surface-container-high text-on-surface font-bold text-sm rounded-md hover:bg-primary hover:text-white transition-colors">
-                    Support Campaign
-                  </button>
-                </div>
-              </div>
-
-              {/* Card 3 */}
-              <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-ambient transition-all flex flex-col">
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    className="w-full h-full object-cover"
-                    alt="Urban reconstruction site after an earthquake"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAShOmRPM3_onni30e8ooRVkwEMNBpGyzCHwGJRpNOPzYaGvys-Qh33imBkuLIPtHvlkQgZ8z0spPLbQ_xchzlw3oRDvSYEm0wZ5TbxTFfLc3JLv4ZAiOahrFyslgNBxV_R1IITAKfUuslRQNsCWWkoFjzQ38KG2rk_HEz2BQRnOKo_YAoRilI935K3pPnazxyF5mgym97xOIA8NFZaomWVYrXKRqMGMUAwuF4KxIXOf5OxjWGwE4lJK7W5dettpBZ8D2pA6N0-iEU"
-                  />
-                  <div className="absolute top-4 left-4 bg-secondary text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">
-                    Recovery
-                  </div>
-                </div>
-                <div className="p-6 flex-grow">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-bold text-lg leading-tight">Haiti School Reconstruction Fund</h3>
-                    <span className="material-symbols-outlined text-secondary">verified</span>
-                  </div>
-                  <div className="w-full bg-surface-container-high h-2 rounded-full mb-3">
-                    <div className="bg-primary h-full rounded-full" style={{ width: '91%' }} />
-                  </div>
-                  <div className="flex justify-between text-xs font-bold text-outline mb-6">
-                    <span>$312,000 raised</span>
-                    <span className="text-on-surface">91%</span>
-                  </div>
-                  <button className="w-full py-3 bg-surface-container-high text-on-surface font-bold text-sm rounded-md hover:bg-primary hover:text-white transition-colors">
-                    Support Campaign
-                  </button>
-                </div>
-              </div>
+              {homeCampaigns.length === 0 ? (
+                <p className="col-span-full text-center text-on-surface-variant py-8">
+                  No live campaigns yet. Check back after administrators publish approved relief efforts.
+                </p>
+              ) : (
+                homeCampaigns.map((c) => {
+                  const img =
+                    (c.image_urls && c.image_urls[0]) ||
+                    (c.disaster_images && c.disaster_images[0]);
+                  const raised = Number(c.current_amount) || 0;
+                  const target = Number(c.target_amount) || 1;
+                  const pct = Math.min(100, Math.round((raised / target) * 100));
+                  return (
+                    <div
+                      key={c.campaign_id}
+                      className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-ambient transition-all flex flex-col border border-outline-variant/15"
+                    >
+                      <div className="relative h-56 overflow-hidden bg-surface-container-high">
+                        {img ? (
+                          <img className="w-full h-full object-cover" alt="" src={img} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-on-surface-variant opacity-20">
+                            <span className="material-symbols-outlined text-6xl">image</span>
+                          </div>
+                        )}
+                        <div className="absolute top-4 left-4 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">
+                          Live
+                        </div>
+                      </div>
+                      <div className="p-6 flex-grow flex flex-col">
+                        <div className="flex justify-between items-start mb-4 gap-2">
+                          <h3 className="font-bold text-lg leading-tight line-clamp-2">{c.title}</h3>
+                          <span className="material-symbols-outlined text-secondary shrink-0">verified</span>
+                        </div>
+                        <p className="text-xs text-outline mb-3 line-clamp-1">{c.ngo_name}</p>
+                        <div className="w-full bg-surface-container-high h-2 rounded-full mb-3 mt-auto">
+                          <div className="bg-primary h-full rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="flex justify-between text-xs font-bold text-outline mb-6">
+                          <span>
+                            {raised.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}{' '}
+                            raised
+                          </span>
+                          <span className="text-on-surface">{pct}%</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/campaigns/${c.campaign_id}`)}
+                          className="w-full rounded-lg border border-outline-variant bg-surface-container-high py-3 text-sm font-semibold text-on-surface transition hover:border-primary hover:bg-primary hover:text-on-primary"
+                        >
+                          View campaign
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </section>
@@ -315,7 +612,7 @@ const HomePage = () => {
                   </div>
                   <div>
                     <h4 className="text-lg font-bold mb-2">Volunteer Verification</h4>
-                    <p className="text-surface-dim text-sm leading-relaxed">
+                    <p className="text-sm leading-relaxed text-white/75">
                       Our &quot;Ground Truth&quot; network of independent volunteers verifies every milestone before
                       funds are released from escrow.
                     </p>
@@ -328,7 +625,7 @@ const HomePage = () => {
                   </div>
                   <div>
                     <h4 className="text-lg font-bold mb-2">Milestone Tracking</h4>
-                    <p className="text-surface-dim text-sm leading-relaxed">
+                    <p className="text-sm leading-relaxed text-white/75">
                       Funds are disbursed in phases. Each phase requires photographic and geo-tagged proof of completion
                       to unlock the next tranche.
                     </p>
@@ -341,7 +638,7 @@ const HomePage = () => {
                   </div>
                   <div>
                     <h4 className="text-lg font-bold mb-2">Immutable Transparency</h4>
-                    <p className="text-surface-dim text-sm leading-relaxed">
+                    <p className="text-sm leading-relaxed text-white/75">
                       Every transaction and verification step is logged on a public ledger, providing an audit trail that
                       cannot be altered or obscured.
                     </p>
@@ -399,10 +696,18 @@ const HomePage = () => {
               Join thousands of donors and verified NGOs working together to rebuild what matters.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="primary-gradient text-white px-10 py-5 rounded-md font-bold text-xl shadow-lg active:scale-95 duration-150">
-                Browse All Campaigns
+              <button
+                type="button"
+                onClick={() => navigate('/campaigns')}
+                className="primary-gradient rounded-lg px-10 py-5 text-xl font-semibold text-white shadow-lg transition active:scale-[0.98]"
+              >
+                View Live Campaigns
               </button>
-              <button className="bg-surface-container-highest text-on-surface px-10 py-5 rounded-md font-bold text-xl hover:bg-surface-dim transition-colors">
+              <button
+                type="button"
+                onClick={() => navigate('/about')}
+                className="rounded-lg border border-outline-variant bg-surface-container-highest px-10 py-5 text-xl font-semibold text-on-surface transition hover:bg-surface-dim active:scale-[0.98]"
+              >
                 Partner With Us
               </button>
             </div>
@@ -410,87 +715,7 @@ const HomePage = () => {
         </section>
       </main>
 
-      {/* Footer (Stitch layout) */}
-      <footer className="w-full py-12 px-8 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-7xl mx-auto">
-          <div className="col-span-1 md:col-span-1">
-            <span className="text-xl font-black text-slate-900 dark:text-white mb-4 block">DeReFund</span>
-            <p className="text-xs font-normal leading-loose text-slate-500">
-              Humanitarian Crowdfunding Reimagined. Built for speed, trust, and radical transparency.
-            </p>
-          </div>
-          <div>
-            <h5 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-6">
-              Platform
-            </h5>
-            <ul className="space-y-4">
-              <li>
-                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
-                  Mission
-                </a>
-              </li>
-              <li>
-                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
-                  NGO Partners
-                </a>
-              </li>
-              <li>
-                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
-                  Transparency
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h5 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-6">
-              Company
-            </h5>
-            <ul className="space-y-4">
-              <li>
-                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
-                  Contact
-                </a>
-              </li>
-              <li>
-                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a className="text-xs font-normal leading-loose text-slate-500 hover:text-blue-600 underline decoration-blue-500/30 underline-offset-4 transition-all">
-                  Careers
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h5 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-6">
-              Newsletter
-            </h5>
-            <p className="text-xs text-slate-500 mb-4">Stay updated on active relief efforts.</p>
-            <div className="flex">
-              <input
-                className="bg-surface-container-high border-none text-xs p-2 rounded-l-md w-full focus:ring-1 focus:ring-primary"
-                placeholder="Email address"
-                type="email"
-              />
-              <button className="bg-primary text-white p-2 rounded-r-md">
-                <span className="material-symbols-outlined text-sm">send</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <p className="text-xs font-normal leading-loose text-slate-500">
-            © 2024 DeReFund. Humanitarian Crowdfunding Reimagined.
-          </p>
-          <div className="flex gap-4">
-            <span className="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary">public</span>
-            <span className="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary">hub</span>
-            <span className="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary">share</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

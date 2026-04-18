@@ -27,6 +27,7 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/users', icon: Users, label: 'Users' },
     { path: '/admin/campaigns', icon: FileText, label: 'Campaigns' },
     { path: '/admin/disasters', icon: AlertTriangle, label: 'Disasters' },
+    { path: '/volunteer/voting', icon: ShieldCheck, label: 'Volunteer Voting' },
     { path: '/admin/logs', icon: Activity, label: 'Activity Logs' },
   ];
 
@@ -60,14 +61,14 @@ const AdminLayout = ({ children }) => {
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-primary rounded-lg flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <span className="font-bold text-lg font-playfair tracking-tight">Admin Panel</span>
+              <span className="font-bold text-lg tracking-tight">Admin Panel</span>
             </div>
           )}
           {!sidebarOpen && (
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center mx-auto">
+            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-primary rounded-lg flex items-center justify-center mx-auto">
               <ShieldCheck className="w-5 h-5" />
             </div>
           )}
@@ -100,7 +101,7 @@ const AdminLayout = ({ children }) => {
                 >
                   <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-emerald-400' : ''}`} />
                   {sidebarOpen && (
-                    <span className="font-medium font-dmsans tracking-tight flex-1">{item.label}</span>
+                    <span className="font-medium tracking-tight flex-1">{item.label}</span>
                   )}
                   {sidebarOpen && active && (
                     <ChevronRight className="w-4 h-4 text-emerald-400" />
@@ -117,22 +118,22 @@ const AdminLayout = ({ children }) => {
             <div className="space-y-2">
               <div className="flex items-center gap-3 px-2 py-2">
                 <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-white font-dmsans tracking-tight">
+                  <span className="text-sm font-bold text-white tracking-tight">
                     {user?.name?.charAt(0).toUpperCase() || 'A'}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-white truncate font-dmsans tracking-tight">
+                  <div className="text-sm font-semibold text-white truncate tracking-tight">
                     {user?.name || 'Admin'}
                   </div>
-                  <div className="text-xs text-slate-400 truncate font-dmsans tracking-tight">
+                  <div className="text-xs text-slate-400 truncate tracking-tight">
                     {user?.email || 'admin@example.com'}
                   </div>
                 </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors font-dmsans tracking-tight"
+                className="w-full flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors tracking-tight"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Logout</span>
@@ -141,7 +142,7 @@ const AdminLayout = ({ children }) => {
           ) : (
             <div className="flex flex-col items-center gap-2">
               <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center">
-                <span className="text-sm font-bold text-white font-dmsans tracking-tight">
+                <span className="text-sm font-bold text-white tracking-tight">
                   {user?.name?.charAt(0).toUpperCase() || 'A'}
                 </span>
               </div>
@@ -165,7 +166,7 @@ const AdminLayout = ({ children }) => {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium font-dmsans tracking-tight">Admin Mode</span>
+              <span className="text-sm font-medium tracking-tight">Admin Mode</span>
             </div>
           </div>
         </header>

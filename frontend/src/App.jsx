@@ -1,6 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 // Public pages
 import HomePage from './pages/public/HomePage';
@@ -16,8 +15,11 @@ import MyDonations from './pages/donor/MyDonations';
 import DonorProfile from './pages/donor/DonorProfile';
 import SavedCampaigns from './pages/donor/SavedCampaigns';
 import ImpactReport from './pages/donor/ImpactReport';
-import VolunteerVerification from './pages/donor/VolunteerVerification';
+import DonorVolunteerVoting from './pages/donor/VolunteerVoting';
 import ReportDisaster from './pages/donor/ReportDisaster';
+import DonorCreateCampaign from './pages/donor/DonorCreateCampaign';
+// Volunteer pages
+import VolunteerVoting from './pages/volunteer/VolunteerVoting';
 // NGO pages
 import NGODashboard from './pages/ngo/NGODashboard';
 import CreateCampaign from './pages/ngo/CreateCampaign';
@@ -39,10 +41,10 @@ import AuthForm from './components/AuthForm';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const AppContent = () => {
-  const { 
+  const {
     isAuthFormOpen,
     authFormMode,
-    closeModals
+    closeModals,
   } = useAuth();
 
   return (
@@ -57,6 +59,19 @@ const AppContent = () => {
         <Route path="/disasters/:disasterId" element={<DisasterDetail />} />
         
         {/* Donor Routes */}
+        <Route path="/volunteer/voting" element={
+          <ProtectedRoute>
+            <VolunteerVoting />
+          </ProtectedRoute>
+        } />
+        <Route path="/donor/voting" element={
+          <ProtectedRoute requiredRole="DONOR">
+            <DonorVolunteerVoting />
+          </ProtectedRoute>
+        } />
+        <Route path="/donor/verify" element={
+          <Navigate to="/donor/voting" replace />
+        } />
         <Route path="/donor" element={
           <ProtectedRoute requiredRole="DONOR">
             <DonorPage />
@@ -65,6 +80,11 @@ const AppContent = () => {
         <Route path="/donor/campaigns" element={
           <ProtectedRoute requiredRole="DONOR">
             <DonorCampaigns />
+          </ProtectedRoute>
+        } />
+        <Route path="/donor/create-campaign" element={
+          <ProtectedRoute requiredRole="DONOR">
+            <DonorCreateCampaign />
           </ProtectedRoute>
         } />
         <Route path="/donor/donations" element={
@@ -87,10 +107,13 @@ const AppContent = () => {
             <ImpactReport />
           </ProtectedRoute>
         } />
-        <Route path="/donor/verify" element={
+        <Route path="/donor/voting" element={
           <ProtectedRoute requiredRole="DONOR">
-            <VolunteerVerification />
+            <VolunteerVoting />
           </ProtectedRoute>
+        } />
+        <Route path="/donor/verify" element={
+          <Navigate to="/donor/voting" replace />
         } />
         <Route path="/donor/report-disaster" element={
           <ProtectedRoute requiredRole="DONOR">

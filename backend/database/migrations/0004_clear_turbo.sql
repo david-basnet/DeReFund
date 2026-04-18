@@ -1,0 +1,1 @@
+ALTER TABLE "campaigns" ADD COLUMN "verification_threshold" integer DEFAULT 20 NOT NULL;

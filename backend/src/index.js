@@ -1,14 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const { env, validateEnv } = require('./config/env');
-const { pool, testConnection } = require('./config/database');
+const { pool } = require('./config/database');
+const { testConnection } = require('./db/client');
 
 // Validate environment variables
 validateEnv();
 
 const app = express();
 
-// Middleware
+// Middleware 
 app.use(cors({
   origin: env.FRONTEND_URL,
   credentials: true

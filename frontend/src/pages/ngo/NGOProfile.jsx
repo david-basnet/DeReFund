@@ -120,8 +120,8 @@ const NGOProfile = () => {
       <NGOLayout>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-black mb-4 font-playfair tracking-tight">Access Denied</h2>
-            <p className="text-gray-800 font-dmsans tracking-tight">This page is only available for NGOs.</p>
+            <h2 className="text-2xl font-bold text-black mb-4 tracking-tight">Access Denied</h2>
+            <p className="text-gray-800 tracking-tight">This page is only available for NGOs.</p>
           </div>
         </div>
       </NGOLayout>
@@ -134,19 +134,19 @@ const NGOProfile = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-2 font-playfair tracking-tight">Profile Settings</h1>
-            <p className="text-slate-600 font-dmsans tracking-tight">Manage your organization information and verification documents</p>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Profile Settings</h1>
+            <p className="text-slate-600 tracking-tight">Manage your organization information and verification documents</p>
           </div>
 
 
           {/* Profile Form */}
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6 mb-6">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-900 font-playfair tracking-tight">Profile Information</h2>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Profile Information</h2>
               {!editing && (
                 <button
                   onClick={() => setEditing(true)}
-                  className="px-6 py-2 bg-purple text-white rounded-lg hover:bg-purple-700 transition-colors border-2 border-purple-800 font-bold font-dmsans tracking-tight"
+                  className="px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all border-2 border-slate-900 font-bold tracking-tight shadow-md"
                 >
                   Edit Profile
                 </button>
@@ -154,9 +154,9 @@ const NGOProfile = () => {
             </div>
 
             {message.text && (
-              <div className={`mb-4 p-4 rounded-lg ${
-                message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-              } font-dmsans tracking-tight`}>
+              <div className={`mb-4 p-4 rounded-xl ${
+                message.type === 'success' ? 'bg-green-50 text-green-800 border-2 border-green-200' : 'bg-red-50 text-red-800 border-2 border-red-200'
+              } tracking-tight font-bold`}>
                 {message.text}
               </div>
             )}
@@ -164,7 +164,7 @@ const NGOProfile = () => {
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 font-dmsans tracking-tight">
+                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-tight uppercase tracking-widest">
                     Organization Name
                   </label>
                   {editing ? (
@@ -172,16 +172,16 @@ const NGOProfile = () => {
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple focus:border-transparent text-slate-900 font-dmsans tracking-tight"
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 tracking-tight transition-all"
                       required
                     />
                   ) : (
-                    <p className="text-slate-900 font-dmsans tracking-tight">{formData.name || 'Not set'}</p>
+                    <p className="text-slate-900 font-bold tracking-tight text-lg">{formData.name || 'Not set'}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 font-dmsans tracking-tight">
+                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-tight uppercase tracking-widest">
                     Email Address
                   </label>
                   {editing ? (
@@ -189,16 +189,16 @@ const NGOProfile = () => {
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple focus:border-transparent text-slate-900 font-dmsans tracking-tight"
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 tracking-tight transition-all"
                       required
                     />
                   ) : (
-                    <p className="text-slate-900 font-dmsans tracking-tight">{formData.email}</p>
+                    <p className="text-slate-900 font-bold tracking-tight text-lg">{formData.email}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 font-dmsans tracking-tight">
+                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-tight uppercase tracking-widest">
                     Wallet Address
                   </label>
                   {editing ? (
@@ -207,10 +207,10 @@ const NGOProfile = () => {
                       value={formData.wallet_address}
                       onChange={(e) => handleInputChange('wallet_address', e.target.value)}
                       placeholder="0x..."
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple focus:border-transparent text-slate-900 font-mono text-sm font-dmsans tracking-tight"
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 font-mono text-sm tracking-tight transition-all"
                     />
                   ) : (
-                    <p className="text-slate-900 font-mono text-sm font-dmsans tracking-tight">
+                    <p className="text-slate-900 font-mono text-sm tracking-tight bg-slate-50 p-2 rounded-lg border border-slate-200 inline-block">
                       {formData.wallet_address || 'Not connected'}
                     </p>
                   )}
@@ -221,14 +221,14 @@ const NGOProfile = () => {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-6 py-2 bg-purple text-white rounded-lg hover:bg-purple-700 transition-colors border-2 border-purple-800 disabled:opacity-50 font-bold font-dmsans tracking-tight"
+                      className="px-8 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all disabled:opacity-50 border-2 border-slate-900 font-bold tracking-tight shadow-md"
                     >
                       {loading ? 'Saving...' : 'Save Changes'}
                     </button>
                     <button
                       type="button"
                       onClick={handleCancel}
-                      className="px-6 py-2 bg-slate-100 text-black border-2 border-slate-300 rounded-lg hover:bg-slate-200 hover:border-slate-400 transition-colors font-bold font-dmsans tracking-tight"
+                      className="px-8 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-bold tracking-tight"
                     >
                       Cancel
                     </button>
@@ -239,77 +239,85 @@ const NGOProfile = () => {
           </div>
 
           {/* Document Upload */}
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 font-playfair tracking-tight">Verification Documents</h2>
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 tracking-tight">Verification Documents</h2>
             
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 font-dmsans tracking-tight">
+                <label className="block text-sm font-bold text-slate-700 mb-2 tracking-tight uppercase tracking-widest">
                   Document Type
                 </label>
                 <select
                   value={documentType}
                   onChange={(e) => setDocumentType(e.target.value)}
-                  className="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-purple focus:border-purple bg-white text-black font-bold font-dmsans tracking-tight"
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 tracking-tight transition-all"
                 >
-                  <option value="REGISTRATION">Registration Certificate</option>
-                  <option value="LICENSE">License</option>
-                  <option value="CERTIFICATE">Certificate</option>
-                  <option value="OTHER">Other</option>
+                  <option value="REGISTRATION">Organization Registration</option>
+                  <option value="TAX_ID">Tax ID / VAT Certificate</option>
+                  <option value="BANK_STATEMENT">Bank Statement</option>
+                  <option value="OTHER">Other Documents</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2 font-dmsans tracking-tight">
-                  Upload Document (PDF, DOC, DOCX, or Image - Max 10MB)
+                <label className="block text-sm font-bold text-slate-700 mb-2 tracking-tight uppercase tracking-widest">
+                  Select File
                 </label>
-                {selectedFile ? (
-                  <div className="flex items-center gap-3 p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
-                    <FileText className="w-5 h-5 text-purple flex-shrink-0" />
-                    <span className="flex-1 text-sm text-black font-medium font-dmsans tracking-tight truncate">
-                      {selectedFile.name}
-                    </span>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-200 border-dashed rounded-xl hover:border-primary/50 transition-all bg-slate-50/50">
+                  <div className="space-y-1 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-slate-400" />
+                    <div className="flex text-sm text-slate-600">
+                      <label className="relative cursor-pointer bg-white rounded-md font-bold text-primary hover:text-primary-focus focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary px-2">
+                        <span>Upload a file</span>
+                        <input
+                          type="file"
+                          className="sr-only"
+                          onChange={handleFileSelect}
+                          accept=".pdf,.jpg,.jpeg,.png"
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-slate-500">PDF, PNG, JPG up to 10MB</p>
+                  </div>
+                </div>
+                {selectedFile && (
+                  <div className="mt-4 p-4 bg-primary-fixed/30 rounded-xl border border-primary/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-primary" />
+                      <span className="text-sm font-bold text-slate-900 tracking-tight">{selectedFile.name}</span>
+                    </div>
                     <button
-                      type="button"
                       onClick={() => setSelectedFile(null)}
-                      className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex-shrink-0"
-                      title="Remove file"
+                      className="p-1 hover:bg-white/50 rounded-full transition-colors"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4 text-slate-500" />
                     </button>
                   </div>
-                ) : (
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    onChange={handleFileSelect}
-                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple hover:file:bg-purple-100 font-dmsans tracking-tight"
-                  />
                 )}
               </div>
-
-              <button
-                onClick={handleDocumentUpload}
-                disabled={!selectedFile || uploading}
-                className="w-full px-6 py-3 bg-purple text-white rounded-lg hover:bg-purple-700 transition-colors border-2 border-purple-800 disabled:opacity-50 disabled:cursor-not-allowed font-bold font-dmsans tracking-tight flex items-center justify-center gap-2"
-              >
-                {uploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-5 h-5" />
-                    Upload Document
-                  </>
-                )}
-              </button>
             </div>
 
-            <div className="border-t border-slate-200 pt-4">
-              <p className="text-sm text-slate-600 font-dmsans tracking-tight">
-                <strong>Note:</strong> Upload your organization's verification documents. Accepted formats: PDF, DOC, DOCX, JPG, PNG. Maximum file size: 10MB.
+            {message.text && (
+              <div className={`mb-4 p-4 rounded-xl ${
+                message.type === 'success' ? 'bg-green-50 text-green-800 border-2 border-green-200' : 'bg-red-50 text-red-800 border-2 border-red-200'
+              } tracking-tight font-bold`}>
+                {message.text}
+              </div>
+            )}
+
+            <button
+              onClick={handleDocumentUpload}
+              disabled={uploading || !selectedFile}
+              className="w-full px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all border-2 border-slate-900 font-bold tracking-tight shadow-md flex items-center justify-center gap-2"
+            >
+              <Upload className="w-5 h-5" />
+              {uploading ? 'Uploading...' : 'Upload Document'}
+            </button>
+
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <p className="text-sm text-slate-500 tracking-tight">
+                <strong className="text-slate-900">Note:</strong> Upload your organization's verification documents. Accepted formats: PDF, DOC, DOCX, JPG, PNG. Maximum file size: 10MB.
                 After upload, your documents will be reviewed by an admin. You will be notified once your verification status is updated.
               </p>
             </div>

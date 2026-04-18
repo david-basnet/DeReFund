@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { campaignAPI, donationAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import Layout from '../../components/Layout';
+import NGOLayout from '../../components/NGOLayout';
 import CampaignStatusBadge from '../../components/CampaignStatusBadge';
+import { DollarSign, FileText, TrendingUp, Users, Plus, Heart, ArrowRight } from 'lucide-react';
 
 const NGOPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalRaised: 0, totalCampaigns: 0 });
@@ -64,205 +66,173 @@ const NGOPage = () => {
   }, []);
 
   return (
-    <Layout>
-      <div className="h-full overflow-y-auto">
-        {/* Hero Banner - Full Screen */}
-        <section className="relative h-screen flex items-center justify-center bg-gradient-to-r from-purple via-light-purple to-purple text-white overflow-hidden pt-24">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple/90 to-light-purple/90"></div>
-          <div className="absolute inset-0 opacity-20" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%)'
-          }}></div>
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="text-center mb-12">
-              <h1 className="text-6xl md:text-7xl font-bold mb-6 font-playfair tracking-tight leading-tight">NGO Dashboard</h1>
-              <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto font-dmsans tracking-tight">
-                Manage your campaigns, track donations, and make a real impact in disaster relief efforts.
+    <NGOLayout>
+      <div className="p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 bg-gradient-to-r from-primary to-[#001a38] p-8 md:p-12 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+            <div className="relative z-10">
+              <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tighter leading-none">
+                NGO Dashboard
+              </h1>
+              <p className="text-lg md:text-xl text-white/80 max-w-2xl font-bold tracking-tight">
+                Manage your relief efforts, track impact, and connect with global donors.
               </p>
             </div>
+            <Link
+              to="/ngo/create-campaign"
+              className="relative z-10 group flex items-center gap-3 bg-white text-primary px-8 py-5 rounded-2xl font-black text-lg hover:shadow-xl transition-all active:scale-[0.98] tracking-tighter"
+            >
+              <Plus className="w-6 h-6" />
+              Start New Campaign
+            </Link>
+            
+            {/* Background elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary-fixed/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+          </div>
 
-            {/* Stats Cards */}
-            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
-                <div className="text-5xl font-bold mb-2 font-playfair tracking-tight">{stats.totalCampaigns}</div>
-                <div className="text-white/90 font-dmsans tracking-tight">Active Campaigns</div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-8 hover:border-primary/20 transition-all">
+              <div className="p-3 bg-primary-fixed/70 rounded-xl w-fit mb-4 text-primary">
+                <DollarSign className="w-8 h-8" />
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
-                <div className="text-5xl font-bold mb-2 font-playfair tracking-tight">${stats.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                <div className="text-white/90 font-dmsans tracking-tight">Total Raised</div>
+              <div className="text-3xl font-black text-slate-900 mb-1 tracking-tighter">
+                ${stats.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
-                <div className="text-5xl font-bold mb-2 font-playfair tracking-tight">{campaigns.filter(c => c.status === 'LIVE').length}</div>
-                <div className="text-white/90 font-dmsans tracking-tight">Live Campaigns</div>
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Total Raised</p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-8 hover:border-primary/20 transition-all">
+              <div className="p-3 bg-primary-fixed/70 rounded-xl w-fit mb-4 text-primary">
+                <FileText className="w-8 h-8" />
               </div>
+              <div className="text-3xl font-black text-slate-900 mb-1 tracking-tighter">
+                {stats.totalCampaigns}
+              </div>
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Active Campaigns</p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-8 hover:border-primary/20 transition-all">
+              <div className="p-3 bg-emerald-50 rounded-xl w-fit mb-4 text-emerald-600">
+                <TrendingUp className="w-8 h-8" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mb-1 tracking-tighter">
+                {campaigns.filter(c => c.status === 'LIVE').length}
+              </div>
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Live Now</p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-8 hover:border-primary/20 transition-all">
+              <div className="p-3 bg-blue-50 rounded-xl w-fit mb-4 text-blue-600">
+                <Users className="w-8 h-8" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mb-1 tracking-tighter">
+                0
+              </div>
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Total Donors</p>
             </div>
           </div>
-        </section>
 
-        {/* Current Campaigns Section */}
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Campaigns Section */}
+          <div className="mb-12">
             <div className="flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-4xl font-bold mb-2 font-playfair tracking-tight text-black">Your Campaigns</h2>
-                <p className="text-gray-800 font-dmsans tracking-tight">
-                  Manage your fundraising campaigns and track progress toward your goals.
-                </p>
-              </div>
-              <Link
-                to="/ngo/create-campaign"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple to-light-purple text-white px-6 py-3 rounded-xl font-bold hover-lift shadow-lg transition-all duration-300 font-dmsans tracking-tight"
-              >
-                Create New Campaign
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter flex items-center gap-3">
+                <Heart className="w-8 h-8 text-primary" />
+                Your Campaigns
+              </h2>
+              <Link to="/ngo/campaigns" className="text-primary font-black flex items-center gap-1 group">
+                View All <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
 
             {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple mx-auto mb-4"></div>
-                <p className="text-gray-800 font-dmsans tracking-tight">Loading campaigns...</p>
+              <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[2rem] border-2 border-slate-100 border-dashed">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+                <p className="font-bold text-slate-500">Loading your campaigns...</p>
               </div>
             ) : campaigns.length === 0 ? (
-              <div className="text-center py-12 bg-light-gray rounded-2xl">
-                <p className="text-gray-800 mb-4 font-dmsans tracking-tight">You haven't created any campaigns yet.</p>
+              <div className="text-center py-24 bg-white rounded-[2rem] border-2 border-slate-100 border-dashed">
+                <p className="text-slate-500 font-bold text-lg mb-6">No campaigns created yet.</p>
                 <Link
                   to="/ngo/create-campaign"
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-purple to-light-purple text-white px-6 py-3 rounded-xl font-bold hover-lift shadow-lg transition-all duration-300 font-dmsans tracking-tight"
+                  className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black hover:bg-slate-800 transition-all shadow-xl"
                 >
-                  Create Your First Campaign
+                  Start First Campaign
                 </Link>
               </div>
             ) : (
-              <div className="grid md:grid-cols-3 gap-6">
-                {campaigns.map((campaign) => {
-                  const progressPercentage = campaign.target_amount > 0 
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {campaigns.slice(0, 3).map((campaign) => {
+                  const progress = campaign.target_amount > 0 
                     ? ((campaign.current_amount || 0) / campaign.target_amount) * 100 
                     : 0;
                   
                   return (
-                    <Link
+                    <div
                       key={campaign.campaign_id}
-                      to={`/campaigns/${campaign.campaign_id}`}
-                      className="border-2 border-gray rounded-2xl p-6 hover-lift card-hover transition-all duration-300 block"
+                      className="bg-white border-2 border-slate-100 rounded-[2rem] p-6 hover:shadow-2xl transition-all group overflow-hidden"
                     >
-                      <div className="bg-gray h-48 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
-                        {campaign.images && campaign.images[0] ? (
-                          <img src={campaign.images[0]} alt={campaign.title} className="w-full h-full object-cover rounded-xl" />
+                      <div className="aspect-video rounded-2xl bg-slate-100 mb-6 overflow-hidden relative">
+                        {campaign.image_urls?.[0] ? (
+                          <img src={campaign.image_urls[0]} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         ) : (
-                          <p className="text-gray-800 font-dmsans tracking-tight">No Image</p>
+                          <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <Heart className="w-12 h-12 opacity-20" />
+                          </div>
                         )}
-                      </div>
-                      <h3 className="text-xl font-bold mb-2 line-clamp-2 font-playfair tracking-tight text-black">{campaign.title}</h3>
-                      <p className="text-gray-800 mb-4 line-clamp-2 text-sm font-dmsans tracking-tight">{campaign.description}</p>
-                      <div className="mb-2">
-                        <div className="flex justify-between text-sm mb-1 font-dmsans tracking-tight">
-                          <span className="text-purple font-bold">
-                            ${(campaign.current_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                          <span className="text-gray-800">
-                            ${campaign.target_amount.toLocaleString()}
-                          </span>
+                        <div className="absolute top-4 right-4">
+                          <CampaignStatusBadge status={campaign.status} size="sm" />
                         </div>
-                        <div className="w-full bg-gray rounded-full h-3">
+                      </div>
+                      
+                      <h3 className="text-xl font-black text-slate-900 mb-2 line-clamp-1 tracking-tighter">
+                        {campaign.title}
+                      </h3>
+                      <p className="text-slate-500 text-sm font-bold line-clamp-2 mb-6 leading-relaxed">
+                        {campaign.description}
+                      </p>
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Raised</p>
+                            <p className="text-xl font-black text-primary tracking-tighter">
+                              ${parseFloat(campaign.current_amount || 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Goal</p>
+                            <p className="text-sm font-black text-slate-900 tracking-tighter">
+                              ${parseFloat(campaign.target_amount).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="bg-gradient-to-r from-purple to-light-purple h-3 rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+                            className="h-full bg-gradient-to-r from-primary to-[#001a38] transition-all duration-1000 ease-out rounded-full"
+                            style={{ width: `${Math.min(progress, 100)}%` }}
                           ></div>
                         </div>
+
+                        <Link
+                          to={`/ngo/campaigns/${campaign.campaign_id}`}
+                          className="flex items-center justify-center w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-900 rounded-xl font-black transition-all border-2 border-slate-200 mt-2"
+                        >
+                          Manage Campaign
+                        </Link>
                       </div>
-                      <div className="flex justify-between items-center mt-4">
-                        <CampaignStatusBadge status={campaign.status} size="sm" />
-                        <span className="text-sm text-gray-800 font-dmsans tracking-tight">{Math.round(progressPercentage)}% funded</span>
-                      </div>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>
             )}
           </div>
-        </section>
-
-        {/* Image Gallery Placeholder */}
-        <section className="py-16 bg-light-gray">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-4xl font-bold mb-8 text-center font-playfair tracking-tight text-black">Our Impact in Action</h2>
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
-                <div key={item} className="bg-gray aspect-square rounded-2xl flex items-center justify-center">
-                  <p className="text-gray-800 text-xs font-dmsans tracking-tight">Image {item}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Benefits Section */}
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-4xl font-bold mb-12 text-center font-playfair tracking-tight text-black">Platform Benefits, So You Can Maximize Impact</h2>
-            
-            <div className="grid md:grid-cols-3 gap-12 mb-12">
-              <div>
-                <h3 className="text-2xl font-bold mb-4 font-playfair tracking-tight text-black">Growth</h3>
-                <ul className="space-y-3 text-gray-800 font-dmsans tracking-tight">
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>Campaign analytics & insights</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>Donor engagement tools</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>Impact tracking & reporting</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="text-2xl font-bold mb-4 font-playfair tracking-tight text-black">Transparency</h3>
-                <ul className="space-y-3 text-gray-800 font-dmsans tracking-tight">
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>Blockchain-verified transactions</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>Public donation tracking</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>Milestone-based fund release</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="text-2xl font-bold mb-4 font-playfair tracking-tight text-black">Support</h3>
-                <ul className="space-y-3 text-gray-800 font-dmsans tracking-tight">
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>24/7 platform access</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>Dedicated support team</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-purple mr-2">✓</span>
-                    <span>Comprehensive documentation</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <p className="text-center text-gray-800 text-lg font-dmsans tracking-tight">
-              We're a global platform connecting NGOs with donors worldwide, building trust through transparency and accountability.
-            </p>
-          </div>
-        </section>
+        </div>
       </div>
-    </Layout>
+    </NGOLayout>
   );
 };
 

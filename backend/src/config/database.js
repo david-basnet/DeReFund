@@ -32,25 +32,7 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
-// Helper function to test connection
-const testConnection = async () => {
-  try {
-    const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
-    console.log('Database connection test:', result.rows[0]);
-    client.release();
-    return true;
-  } catch (error) {
-    console.error('Database connection failed:', error.message);
-    if (error.code) {
-      console.error('Error code:', error.code);
-    }
-    return false;
-  }
-};
-
 module.exports = {
   pool,
-  testConnection,
 };
 

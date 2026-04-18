@@ -1,4 +1,12 @@
-const { createUser, getUserByEmail, getUserWithPassword, getUserById, updateUser, deleteUser } = require('../models/userModel');
+const {
+  createUser,
+  getUserByEmail,
+  getUserWithPassword,
+  getUserById,
+  updateUser,
+  deleteUser,
+  getLatestVerificationStatus,
+} = require('../services/userService');
 const { hashPassword, comparePassword, generateToken, formatResponse } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -112,24 +120,14 @@ const getProfile = async (req, res, next) => {
 // Get current user's verification status
 const getVerificationStatus = async (req, res, next) => {
   try {
-    const { pool } = require('../config/database');
     const userId = req.user.userId;
-    
-    // Get verification status for current user
-    const query = `
-      SELECT uv.status as verification_status
-      FROM user_verification uv
-      WHERE uv.user_id = $1
-      ORDER BY uv.created_at DESC
-      LIMIT 1
-    `;
-    const result = await pool.query(query, [userId]);
-    
-    const verificationStatus = result.rows.length > 0 ? result.rows[0].verification_status : null;
-    
-    res.json(formatResponse(true, 'Verification status retrieved successfully', {
-      verification_status: verificationStatus || null
-    }));
+    const verificationStatus = await getLatestVerificationStatus(userId);
+
+    res.json(
+      formatResponse(true, 'Verification status retrieved successfully', {
+        verification_status: verificationStatus || null,
+      })
+    );
   } catch (error) {
     next(error);
   }

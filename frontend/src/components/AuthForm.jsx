@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
@@ -8,6 +8,7 @@ import './AuthForm.css';
 const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(initialMode === 'signup');
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -435,6 +436,13 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
       });
       onClose();
       
+      // Check if there's a specific page to return to
+      const from = location.state?.from?.pathname;
+      if (from && from !== '/') {
+        navigate(from);
+        return;
+      }
+      
       // Get user role from response - backend returns user in response.data.user
       const userRole = response?.data?.user?.role;
       
@@ -444,7 +452,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
       } else if (userRole === 'NGO') {
         navigate('/ngo');
       } else {
-        navigate('/donor');
+        navigate('/');
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
@@ -502,13 +510,21 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
         role: registerData.role,
       });
       onClose();
+
+      // Check if there's a specific page to return to
+      const from = location.state?.from?.pathname;
+      if (from && from !== '/') {
+        navigate(from);
+        return;
+      }
+
       // Redirect based on role
       if (registerData.role === 'ADMIN') {
         navigate('/admin');
       } else if (registerData.role === 'NGO') {
         navigate('/ngo');
       } else {
-        navigate('/donor');
+        navigate('/');
       }
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');

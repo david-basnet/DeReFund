@@ -55,6 +55,9 @@ const isAdmin = authorize('ADMIN');
 // Check if user is NGO
 const isNGO = authorize('NGO');
 
+// Check if user is donor
+const isDonor = authorize('DONOR');
+
 // Check if user is donor or NGO
 const isDonorOrNGO = authorize('DONOR', 'NGO');
 
@@ -63,6 +66,7 @@ module.exports = {
   authorize,
   isAdmin,
   isNGO,
+  isDonor,
   isDonorOrNGO
 };
 

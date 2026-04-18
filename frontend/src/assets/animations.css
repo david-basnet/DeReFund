@@ -108,7 +108,7 @@
 
 /* Gradient Text */
 .gradient-text {
-  background: linear-gradient(135deg, #580695 0%, #900AF5 100%);
+  background: linear-gradient(135deg, #002455 0%, #0a3d6b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -127,7 +127,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #580695, #900AF5);
+  background: linear-gradient(90deg, #002455, #0a3d6b);
   transition: width 0.3s ease;
 }
 
@@ -160,7 +160,7 @@
 
 .card-hover:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(88, 6, 149, 0.2);
+  box-shadow: 0 15px 35px rgba(0, 91, 191, 0.2);
 }
 
 /* Loading Skeleton */

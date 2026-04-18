@@ -169,10 +169,10 @@ const NGODashboard = () => {
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2 font-playfair tracking-tight">
+          <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">
             Welcome back, {user?.name || 'NGO'}!
           </h1>
-          <p className="text-slate-600 font-dmsans tracking-tight">
+          <p className="text-slate-600 tracking-tight">
             Manage your campaigns and track your impact
           </p>
         </div>
@@ -180,76 +180,76 @@ const NGODashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <DollarSign className="w-6 h-6 text-purple" />
+              <div className="p-3 bg-primary-fixed/70 rounded-xl">
+                <DollarSign className="w-6 h-6 text-primary" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
+            <div className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">
               ${stats.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Total Raised</div>
+            <div className="text-sm text-slate-600 font-bold tracking-tight">Total Raised</div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <FileText className="w-6 h-6 text-blue-600" />
+              <div className="p-3 bg-primary-fixed/70 rounded-xl">
+                <FileText className="w-6 h-6 text-primary" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
+            <div className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">
               {stats.totalCampaigns}
             </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Total Campaigns</div>
+            <div className="text-sm text-slate-600 font-bold tracking-tight">Total Campaigns</div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-green-50 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-green-600" />
+              <div className="p-3 bg-emerald-50 rounded-xl">
+                <TrendingUp className="w-6 h-6 text-emerald-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
+            <div className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">
               {stats.liveCampaigns}
             </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Live Campaigns</div>
+            <div className="text-sm text-slate-600 font-bold tracking-tight">Live Campaigns</div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-emerald-50 rounded-lg">
-                <Users className="w-6 h-6 text-emerald-600" />
+              <div className="p-3 bg-blue-50 rounded-xl">
+                <Users className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
+            <div className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">
               {stats.totalDonations}
             </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Total Donations</div>
+            <div className="text-sm text-slate-600 font-bold tracking-tight">Total Donations</div>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-4 font-playfair tracking-tight">Quick Actions</h2>
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-4 tracking-tight">Quick Actions</h2>
             <div className="space-y-3">
               <Link
                 to="/ngo/campaigns"
-                className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 rounded-lg transition-colors"
+                className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border-2 border-slate-200 rounded-xl transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-purple" />
-                  <span className="font-bold text-black font-dmsans tracking-tight">View All Campaigns</span>
+                  <FileText className="w-5 h-5 text-primary" />
+                  <span className="font-bold text-black tracking-tight">View All Campaigns</span>
                 </div>
               </Link>
               <Link
                 to="/ngo/analytics"
-                className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 rounded-lg transition-colors"
+                className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 border-2 border-slate-200 rounded-xl transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <BarChart3 className="w-5 h-5 text-purple" />
-                  <span className="font-bold text-black font-dmsans tracking-tight">View Analytics</span>
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  <span className="font-bold text-black tracking-tight">View Analytics</span>
                 </div>
               </Link>
             </div>

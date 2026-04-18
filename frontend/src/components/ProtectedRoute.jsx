@@ -1,8 +1,9 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -13,7 +14,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   }
 
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
   if (requiredRole) {
@@ -22,7 +23,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     const requiredRoleUpper = requiredRole.toUpperCase();
     
     if (userRole !== requiredRoleUpper) {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/" replace state={{ from: location }} />;
     }
   }
 

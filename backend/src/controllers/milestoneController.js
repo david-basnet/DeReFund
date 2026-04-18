@@ -1,5 +1,5 @@
-const { createMilestone, getMilestoneById, getMilestonesByCampaign, updateMilestoneStatus } = require('../models/milestoneModel');
-const { getCampaignById } = require('../models/campaignModel');
+const { createMilestone, getMilestoneById, getMilestonesByCampaign, updateMilestoneStatus } = require('../services/milestoneService');
+const { getCampaignById } = require('../services/campaignService');
 const { formatResponse } = require('../utils/helpers');
 
 // Create milestone

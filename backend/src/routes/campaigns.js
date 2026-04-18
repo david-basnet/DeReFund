@@ -1,23 +1,37 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, isNGO, isAdmin } = require('../middleware/auth');
-const { validateCampaign } = require('../utils/validators');
-const { create, getById, getAll, update } = require('../controllers/campaignController');
+const { authenticate, isNGO, isDonor } = require('../middleware/auth');
+const {
+  validateCampaign,
+  validateDonorCampaign,
+  validateNgoCampaignDecision,
+} = require('../utils/validators');
+const {
+  create,
+  createAsDonor,
+  ngoConfirm,
+  getVerifiedNgos,
+  getPublicImpactStats,
+  getPublicBrowse,
+  getPublicById,
+  getById,
+  getAll,
+  update,
+} = require('../controllers/campaignController');
 
-// All routes require authentication
+// Public — no auth (specific paths before :campaignId)
+router.get('/public/verified-ngos', getVerifiedNgos);
+router.get('/public/stats', getPublicImpactStats);
+router.get('/public', getPublicBrowse);
+router.get('/public/:campaignId', getPublicById);
+
 router.use(authenticate);
 
-// Get all campaigns
 router.get('/', getAll);
-
-// Get campaign by ID
-router.get('/:campaignId', getById);
-
-// Create campaign (NGO only)
+router.post('/donor-proposal', isDonor, validateDonorCampaign, createAsDonor);
 router.post('/', isNGO, validateCampaign, create);
-
-// Update campaign (NGO owner or Admin)
+router.patch('/:campaignId/ngo-confirm', isNGO, validateNgoCampaignDecision, ngoConfirm);
+router.get('/:campaignId', getById);
 router.patch('/:campaignId', update);
 
 module.exports = router;
-

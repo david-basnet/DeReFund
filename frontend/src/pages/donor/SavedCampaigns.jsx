@@ -222,13 +222,13 @@ const SavedCampaigns = () => {
               </div>
               <h1 
                 ref={titleRef}
-                className="text-6xl font-bold mb-4 text-white font-playfair tracking-tight leading-tight"
+                className="text-6xl font-bold mb-4 text-white tracking-tight leading-tight"
               >
                 Saved Campaigns
               </h1>
               <p 
                 ref={subtitleRef}
-                className="text-xl text-white/90 font-dmsans tracking-tight opacity-0"
+                className="text-xl text-white/90 tracking-tight opacity-0"
               >
                 Your favorite campaigns that you want to support
               </p>
@@ -239,19 +239,19 @@ const SavedCampaigns = () => {
           {loading ? (
             <div className="text-center py-16 animate-fade-in">
               <Loader2 className="inline-block animate-spin h-16 w-16 text-purple mb-4" />
-              <p className="text-dark-gray font-dmsans tracking-tight">Loading saved campaigns...</p>
+              <p className="text-dark-gray tracking-tight">Loading saved campaigns...</p>
             </div>
           ) : savedCampaigns.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl shadow-lg animate-fade-in">
               <div className="flex justify-center mb-6">
                 <Heart className="h-20 w-20 text-purple/30" />
               </div>
-              <p className="text-dark-gray mb-6 font-dmsans text-lg tracking-tight">You haven't saved any campaigns yet.</p>
+              <p className="text-dark-gray mb-6 text-lg tracking-tight">You haven't saved any campaigns yet.</p>
               <Link
                 to="/campaigns"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple to-light-purple text-white px-8 py-4 rounded-xl font-bold hover-lift shadow-lg transition-all duration-300 font-dmsans tracking-tight"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple to-light-purple text-white px-8 py-4 rounded-xl font-bold hover-lift shadow-lg transition-all duration-300 tracking-tight"
               >
-                Browse Campaigns
+                View Live Campaigns
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
@@ -298,12 +298,12 @@ const SavedCampaigns = () => {
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-2">
                         <Link to={`/campaigns/${campaign.campaign_id}`}>
-                          <h3 className="text-xl font-bold mb-2 line-clamp-2 hover:text-purple transition-colors font-playfair text-dark-green tracking-tight leading-tight">{campaign.title}</h3>
+                          <h3 className="text-xl font-bold mb-2 line-clamp-2 hover:text-purple transition-colors  text-dark-green tracking-tight leading-tight">{campaign.title}</h3>
                         </Link>
                       </div>
-                      <p className="text-dark-gray mb-4 text-sm line-clamp-2 font-dmsans tracking-tight leading-relaxed">{campaign.description}</p>
+                      <p className="text-dark-gray mb-4 text-sm line-clamp-2 tracking-tight leading-relaxed">{campaign.description}</p>
                       <div className="mb-4">
-                        <div className="flex justify-between text-sm mb-2 font-dmsans tracking-tight">
+                        <div className="flex justify-between text-sm mb-2 tracking-tight">
                           <span className="text-dark-gray">Raised</span>
                           <span className="font-bold text-dark-green">
                             ${(campaign.current_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${campaign.target_amount.toLocaleString()}
@@ -317,10 +317,10 @@ const SavedCampaigns = () => {
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-dark-gray font-dmsans font-semibold tracking-tight">{Math.round(progressPercentage)}% funded</span>
+                        <span className="text-sm text-dark-gray  font-semibold tracking-tight">{Math.round(progressPercentage)}% funded</span>
                         <Link
                           to={`/campaigns/${campaign.campaign_id}`}
-                          className="inline-flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-purple to-light-purple text-white rounded-xl hover-lift shadow-md transition-all duration-300 text-sm font-bold font-dmsans tracking-tight"
+                          className="inline-flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-purple to-light-purple text-white rounded-xl hover-lift shadow-md transition-all duration-300 text-sm font-bold tracking-tight"
                         >
                           Donate Now
                           <ArrowRight className="h-4 w-4" />

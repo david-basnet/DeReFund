@@ -4,12 +4,12 @@ const {
   hasVolunteerVerified,
   getCampaignVerifications,
   getCampaignsPendingVerification
-} = require('../models/volunteerVerificationModel');
-const { getCampaignById, updateCampaign } = require('../models/campaignModel');
+} = require('../services/volunteerVerificationService');
+const { getCampaignById, updateCampaign } = require('../services/campaignService');
 const { formatResponse } = require('../utils/helpers');
 const { pool } = require('../config/database');
 
-const REQUIRED_VERIFICATIONS = 1;
+// const REQUIRED_VERIFICATIONS = 20; // Replaced by campaign-specific threshold
 
 // Verify a campaign (volunteer action)
 const verifyCampaign = async (req, res, next) => {
@@ -44,19 +44,20 @@ const verifyCampaign = async (req, res, next) => {
 
     // Check if we've reached the required number of verifications
     const verificationCount = await getVerificationCount(campaignId);
+    const threshold = campaign.verification_threshold || 20;
     
-    if (verificationCount >= REQUIRED_VERIFICATIONS) {
-      // Update campaign status to PENDING_ADMIN_APPROVAL (waiting for admin final approval)
+    if (verificationCount >= threshold) {
+      // Update campaign status to VERIFIED_BY_VOLUNTEERS
       await updateCampaign(campaignId, { 
-        status: 'PENDING_ADMIN_APPROVAL',
+        status: 'VERIFIED_BY_VOLUNTEERS',
         updated_at: new Date()
       });
     }
 
     res.json(formatResponse(true, 'Campaign verified successfully', {
       verificationCount,
-      required: REQUIRED_VERIFICATIONS,
-      status: verificationCount >= REQUIRED_VERIFICATIONS ? 'PENDING_ADMIN_APPROVAL' : 'PENDING_VERIFICATION'
+      required: threshold,
+      status: verificationCount >= threshold ? 'VERIFIED_BY_VOLUNTEERS' : 'PENDING_VERIFICATION'
     }));
   } catch (error) {
     next(error);
@@ -67,7 +68,12 @@ const verifyCampaign = async (req, res, next) => {
 const getPendingVerificationCampaigns = async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const result = await getCampaignsPendingVerification(parseInt(page), parseInt(limit));
+    const volunteerId = req.user?.userId;
+    const result = await getCampaignsPendingVerification(
+      parseInt(page),
+      parseInt(limit),
+      volunteerId
+    );
     res.json(formatResponse(true, 'Campaigns retrieved successfully', result));
   } catch (error) {
     next(error);
@@ -86,6 +92,7 @@ const getCampaignVerificationStatus = async (req, res, next) => {
     }
 
     const verificationCount = await getVerificationCount(campaignId);
+    const threshold = campaign.verification_threshold || 20;
     const hasVerified = volunteerId ? await hasVolunteerVerified(campaignId, volunteerId) : false;
     const verifications = await getCampaignVerifications(campaignId);
 
@@ -93,7 +100,7 @@ const getCampaignVerificationStatus = async (req, res, next) => {
       campaignId,
       status: campaign.status,
       verificationCount,
-      required: REQUIRED_VERIFICATIONS,
+      required: threshold,
       hasVerified,
       verifications,
       canVerify: campaign.status === 'PENDING_VERIFICATION' && !hasVerified && volunteerId

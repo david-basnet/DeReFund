@@ -2,12 +2,23 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, Heart, Shield, TrendingUp, Settings,
-  LogOut, AlertTriangle, FileText, Plus
+  LayoutDashboard,
+  Heart,
+  Shield,
+  TrendingUp,
+  Settings,
+  LogOut,
+  AlertTriangle,
+  FileText,
+  Plus,
+  Menu,
+  UserCircle,
+  Home,
 } from 'lucide-react';
 
 const DonorLayout = ({ children }) => {
-  const [sidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -16,22 +27,46 @@ const DonorLayout = ({ children }) => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setSidebarOpen(!mobile);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, isMobile]);
+
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
   const menuItems = [
+    { path: '/', icon: Home, label: 'Home' },
     { path: '/donor', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/donor/campaigns', icon: FileText, label: 'Campaigns' },
-    { path: '/donor/report-disaster', icon: Plus, label: 'Create Disaster' },
+    { path: '/donor/create-campaign', icon: Plus, label: 'Propose campaign' },
+    { path: '/donor/report-disaster', icon: AlertTriangle, label: 'Disaster Management' },
     { path: '/donor/donations', icon: Heart, label: 'My Donations' },
-    { path: '/donor/verify', icon: Shield, label: 'Verify Campaigns' },
+    { path: '/donor/voting', icon: Shield, label: 'Volunteer Voting' },
     { path: '/donor/impact', icon: TrendingUp, label: 'My Impact' },
     { path: '/donor/profile', icon: Settings, label: 'Profile Settings' },
   ];
 
   const isActive = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
     if (path === '/donor') {
       return location.pathname === '/donor';
     }
@@ -39,60 +74,66 @@ const DonorLayout = ({ children }) => {
     if (path === '/donor/campaigns') {
       return location.pathname.startsWith('/donor/campaigns');
     }
+    if (path === '/donor/create-campaign') {
+      return location.pathname === '/donor/create-campaign';
+    }
     return location.pathname.startsWith(path);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
+      {isMobile && sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar overlay"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-[1px] lg:hidden"
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } bg-gradient-to-b from-blue-600 via-blue-700 to-blue-800 text-white transition-all duration-300 fixed h-screen z-40 shadow-2xl`}
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden bg-gradient-to-b from-[#022649] via-[#032f55] to-[#001a38] text-white shadow-2xl transition-all duration-300 ${
+          isMobile
+            ? sidebarOpen
+              ? 'w-72 translate-x-0'
+              : 'w-72 -translate-x-full'
+            : sidebarOpen
+              ? 'w-64'
+              : 'w-20'
+        }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo/Header */}
-          <div className="p-6 border-b border-white/20">
-            <div className="flex items-center justify-between">
+          <div className="border-b border-white/10 px-3 py-3">
+            <div
+              className={`flex items-center gap-2 ${
+                sidebarOpen ? 'justify-between' : 'justify-center'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setSidebarOpen((open) => !open)}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 transition-colors hover:bg-white/20"
+                aria-label="Toggle sidebar"
+              >
+                <Menu className="h-5 w-5 text-white" />
+              </button>
               {sidebarOpen && (
-                <h1 className="text-2xl font-bold font-playfair tracking-tight">Donor Portal</h1>
-              )}
-              {!sidebarOpen && (
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Heart className="w-6 h-6" />
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <div className="min-w-0">
+                    <h1 className="truncate text-sm font-semibold tracking-tight text-white">
+                      Donor Portal
+                    </h1>
+                    <p className="truncate text-[11px] text-white/80">Quick access</p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* User Info */}
-          <div className="p-4 border-b border-white/20">
-            {sidebarOpen ? (
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg">
-                    {user?.name?.charAt(0).toUpperCase() || 'D'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-white truncate font-dmsans">{user?.name || 'Donor'}</p>
-                    <p className="text-sm text-white/80 truncate font-dmsans">{user?.email || ''}</p>
-                  </div>
-                </div>
-                <div className="mt-2 px-3 py-2 bg-white/10 rounded-lg">
-                  <p className="text-xs text-white/90 font-dmsans">Donor/Volunteer</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg">
-                  {user?.name?.charAt(0).toUpperCase() || 'D'}
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4">
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
             <ul className="space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -101,15 +142,21 @@ const DonorLayout = ({ children }) => {
                   <li key={item.path}>
                     <Link
                       to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                      className={`flex items-center rounded-2xl transition-all duration-200 ${
+                        sidebarOpen
+                          ? 'gap-3 px-4 py-3 justify-start'
+                          : 'justify-center px-0 py-3'
+                      } ${
                         active
                           ? 'bg-white/20 text-white shadow-lg'
                           : 'text-white/80 hover:bg-white/10 hover:text-white'
                       }`}
                     >
-                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <Icon className="h-5 w-5 shrink-0" />
                       {sidebarOpen && (
-                        <span className="font-medium font-dmsans tracking-tight">{item.label}</span>
+                        <span className="truncate text-sm font-medium tracking-tight">
+                          {item.label}
+                        </span>
                       )}
                     </Link>
                   </li>
@@ -119,21 +166,81 @@ const DonorLayout = ({ children }) => {
           </nav>
 
           {/* Logout */}
-          <div className="p-4 border-t border-white/20">
+          <div className="border-t border-white/20 px-3 py-4">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-red-600/80 hover:bg-red-600 text-white rounded-xl transition-all duration-200 font-bold font-dmsans tracking-tight"
+              className={`inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-all duration-200 hover:bg-white/20 ${
+                sidebarOpen
+                  ? 'w-full gap-2 px-3 py-2 text-[13px] font-medium'
+                  : 'h-11 w-full px-0'
+              }`}
             >
-              <LogOut className="w-5 h-5" />
-              {sidebarOpen && <span>LOGOUT</span>}
+              <LogOut className="h-4 w-4 shrink-0" />
+              {sidebarOpen && <span>Logout</span>}
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        <div className="min-h-screen">
+      <main
+        className={`min-h-screen transition-all duration-300 ${
+          isMobile ? 'ml-0' : sidebarOpen ? 'ml-64' : 'ml-20'
+        }`}
+      >
+        <div className="sticky top-0 z-20 bg-white/95 shadow-sm border-b border-slate-200/10 backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#022649] text-white shadow-sm transition-colors hover:bg-[#03325d] lg:hidden"
+                  aria-label="Open sidebar"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+              )}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-primary">
+                <UserCircle className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {user?.name || 'Donor'}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {user?.email || 'donor@example.com'}
+                </p>
+              </div>
+            </div>
+            <div className="relative group shrink-0">
+              <button
+                type="button"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-100 sm:px-4"
+              >
+                <UserCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Account</span>
+              </button>
+              <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 absolute right-0 top-full mt-2 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-200/70">
+                <Link
+                  to="/donor/profile"
+                  className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Settings className="w-4 h-4" />
+                  Profile settings
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="min-h-screen px-4 py-4 sm:px-5">
           {children}
         </div>
       </main>

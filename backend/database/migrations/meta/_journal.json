@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1776329827108,
+      "tag": "0000_aromatic_ultimates",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776435232186,
+      "tag": "0001_married_cargill",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776435260688,
+      "tag": "0002_jazzy_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776445886508,
+      "tag": "0003_lonely_spitfire",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776453851615,
+      "tag": "0004_clear_turbo",
+      "breakpoints": true
+    }
+  ]
+}

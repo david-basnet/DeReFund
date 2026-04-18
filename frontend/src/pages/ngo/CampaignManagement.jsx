@@ -72,8 +72,8 @@ const CampaignManagement = () => {
       <NGOLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-black mb-4 font-playfair tracking-tight">Access Denied</h2>
-            <p className="text-gray-800 font-dmsans tracking-tight">This page is only available for NGOs.</p>
+            <h2 className="text-2xl font-bold text-black mb-4 tracking-tight">Access Denied</h2>
+            <p className="text-gray-800 tracking-tight">This page is only available for NGOs.</p>
           </div>
         </div>
       </NGOLayout>
@@ -85,8 +85,8 @@ const CampaignManagement = () => {
       <NGOLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-800 font-dmsans tracking-tight">Loading campaign data...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-800 tracking-tight">Loading campaign data...</p>
           </div>
         </div>
       </NGOLayout>
@@ -98,8 +98,8 @@ const CampaignManagement = () => {
       <NGOLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-black mb-4 font-playfair tracking-tight">Campaign Not Found</h2>
-            <Link to="/ngo/campaigns" className="text-purple hover:text-light-purple underline-animate font-dmsans tracking-tight font-bold">Back to Campaigns</Link>
+            <h2 className="text-2xl font-bold text-black mb-4 tracking-tight">Campaign Not Found</h2>
+            <Link to="/ngo/campaigns" className="text-primary hover:opacity-80 transition-opacity tracking-tight font-bold">Back to Campaigns</Link>
           </div>
         </div>
       </NGOLayout>
@@ -115,15 +115,15 @@ const CampaignManagement = () => {
       <div className="min-h-screen bg-gray-50 p-6 lg:p-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-black mb-2 font-playfair tracking-tight">{campaign.title}</h1>
-                <p className="text-gray-800 font-dmsans tracking-tight">{campaign.description}</p>
+                <h1 className="text-3xl font-bold text-black mb-2 tracking-tight">{campaign.title}</h1>
+                <p className="text-gray-800 tracking-tight">{campaign.description}</p>
               </div>
               <Link
                 to={`/ngo/campaigns/${campaignId}/edit`}
-                className="px-6 py-3 bg-gradient-to-r from-purple to-light-purple text-white rounded-xl hover-lift shadow-lg transition-all duration-300 font-bold font-dmsans tracking-tight"
+                className="px-6 py-3 bg-gradient-to-r from-primary to-[#001a38] text-white rounded-xl hover:shadow-lg transition-all duration-300 font-bold tracking-tight"
               >
                 Edit Campaign
               </Link>
@@ -131,58 +131,58 @@ const CampaignManagement = () => {
           </div>
 
           {/* Stats */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6 mb-6">
             <div className="grid md:grid-cols-4 gap-4 mt-6">
-              <div className="bg-white border-2 border-purple/20 rounded-lg p-4">
-                <div className="text-2xl font-bold text-purple mb-1 font-playfair tracking-tight">
+              <div className="bg-white border-2 border-primary/20 rounded-xl p-4">
+                <div className="text-2xl font-bold text-primary mb-1 tracking-tight">
                   ${(campaign.current_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <div className="text-sm text-gray-800 font-dmsans tracking-tight">Raised</div>
+                <div className="text-sm text-gray-800 font-bold tracking-tight">Raised</div>
               </div>
-              <div className="bg-white border-2 border-green-500/20 rounded-lg p-4">
-                <div className="text-2xl font-bold text-green-600 mb-1 font-playfair tracking-tight">{donations.length}</div>
-                <div className="text-sm text-gray-800 font-dmsans tracking-tight">Donations</div>
+              <div className="bg-white border-2 border-green-500/20 rounded-xl p-4">
+                <div className="text-2xl font-bold text-green-600 mb-1 tracking-tight">{donations.length}</div>
+                <div className="text-sm text-gray-800 font-bold tracking-tight">Donations</div>
               </div>
-              <div className="bg-white border-2 border-purple/20 rounded-lg p-4">
-                <div className="text-2xl font-bold text-purple mb-1 font-playfair tracking-tight">{milestones.length}</div>
-                <div className="text-sm text-gray-800 font-dmsans tracking-tight">Milestones</div>
+              <div className="bg-white border-2 border-blue-500/20 rounded-xl p-4">
+                <div className="text-2xl font-bold text-blue-600 mb-1 tracking-tight">{milestones.length}</div>
+                <div className="text-sm text-gray-800 font-bold tracking-tight">Milestones</div>
               </div>
-              <div className="bg-white border-2 border-orange-500/20 rounded-lg p-4">
-                <div className="text-2xl font-bold text-orange-600 mb-1 font-playfair tracking-tight">{Math.round(progressPercentage)}%</div>
-                <div className="text-sm text-gray-800 font-dmsans tracking-tight">Progress</div>
+              <div className="bg-white border-2 border-orange-500/20 rounded-xl p-4">
+                <div className="text-2xl font-bold text-orange-600 mb-1 tracking-tight">{Math.round(progressPercentage)}%</div>
+                <div className="text-sm text-gray-800 font-bold tracking-tight">Progress</div>
               </div>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="bg-white rounded-lg shadow-md mb-6">
-            <div className="flex border-b border-gray-200">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 mb-6 overflow-hidden">
+            <div className="flex border-b border-gray-100">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`px-6 py-4 font-bold transition font-dmsans tracking-tight ${
+                className={`px-6 py-4 font-bold transition tracking-tight ${
                   activeTab === 'overview'
-                    ? 'text-purple border-b-2 border-purple'
-                    : 'text-gray-800 hover:text-purple'
+                    ? 'text-primary border-b-4 border-primary bg-primary-fixed/30'
+                    : 'text-gray-800 hover:text-primary hover:bg-slate-50'
                 }`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('donations')}
-                className={`px-6 py-4 font-bold transition font-dmsans tracking-tight ${
+                className={`px-6 py-4 font-bold transition tracking-tight ${
                   activeTab === 'donations'
-                    ? 'text-purple border-b-2 border-purple'
-                    : 'text-gray-800 hover:text-purple'
+                    ? 'text-primary border-b-4 border-primary bg-primary-fixed/30'
+                    : 'text-gray-800 hover:text-primary hover:bg-slate-50'
                 }`}
               >
                 Donations ({donations.length})
               </button>
               <button
                 onClick={() => setActiveTab('milestones')}
-                className={`px-6 py-4 font-bold transition font-dmsans tracking-tight ${
+                className={`px-6 py-4 font-bold transition tracking-tight ${
                   activeTab === 'milestones'
-                    ? 'text-purple border-b-2 border-purple'
-                    : 'text-gray-800 hover:text-purple'
+                    ? 'text-primary border-b-4 border-primary bg-primary-fixed/30'
+                    : 'text-gray-800 hover:text-primary hover:bg-slate-50'
                 }`}
               >
                 Milestones ({milestones.length})
@@ -191,21 +191,21 @@ const CampaignManagement = () => {
           </div>
 
           {/* Content */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-xl font-bold text-black mb-4 font-playfair tracking-tight">Campaign Progress</h2>
+                  <h2 className="text-xl font-bold text-black mb-4 tracking-tight">Campaign Progress</h2>
                   <div className="mb-2">
-                    <div className="flex justify-between text-sm mb-2 font-dmsans tracking-tight">
-                      <span className="text-gray-800">Target: ${campaign.target_amount.toLocaleString()}</span>
-                      <span className="font-bold text-purple">
+                    <div className="flex justify-between text-sm mb-2 tracking-tight">
+                      <span className="text-gray-800 font-bold">Target: ${campaign.target_amount.toLocaleString()}</span>
+                      <span className="font-bold text-primary">
                         ${(campaign.current_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
-                    <div className="w-full bg-gray rounded-full h-4">
+                    <div className="w-full bg-slate-100 rounded-full h-4">
                       <div
-                        className="bg-gradient-to-r from-purple to-light-purple h-4 rounded-full transition-all"
+                        className="bg-gradient-to-r from-primary to-[#001a38] h-4 rounded-full transition-all"
                         style={{ width: `${Math.min(progressPercentage, 100)}%` }}
                       ></div>
                     </div>
@@ -213,21 +213,21 @@ const CampaignManagement = () => {
                 </div>
 
                 <div>
-                  <h2 className="text-xl font-bold text-black mb-4 font-playfair tracking-tight">Campaign Details</h2>
+                  <h2 className="text-xl font-bold text-black mb-4 tracking-tight">Campaign Details</h2>
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-800 font-dmsans tracking-tight">Status</p>
-                      <span className={`inline-block mt-1 px-3 py-1 rounded-full text-sm font-bold font-dmsans tracking-tight ${
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Status</p>
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold tracking-tight ${
                         campaign.status === 'LIVE' ? 'bg-green-100 text-green-700' :
-                        campaign.status === 'COMPLETED' ? 'bg-purple/10 text-purple' :
-                        'bg-gray text-black'
+                        campaign.status === 'COMPLETED' ? 'bg-primary-fixed/50 text-primary' :
+                        'bg-slate-200 text-slate-700'
                       }`}>
                         {campaign.status}
                       </span>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-800 font-dmsans tracking-tight">Created</p>
-                      <p className="text-black mt-1 font-dmsans tracking-tight">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Created</p>
+                      <p className="text-black font-bold tracking-tight">
                         {new Date(campaign.created_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -238,45 +238,37 @@ const CampaignManagement = () => {
 
             {activeTab === 'donations' && (
               <div>
-                <h2 className="text-xl font-bold text-black mb-4 font-playfair tracking-tight">Donations Received</h2>
+                <h2 className="text-xl font-bold text-black mb-4 tracking-tight">Donations Received</h2>
                 {donations.length === 0 ? (
-                  <p className="text-gray-800 text-center py-8 font-dmsans tracking-tight">No donations yet.</p>
+                  <div className="text-center py-12">
+                    <DollarSign className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                    <p className="text-gray-500 font-bold tracking-tight">No donations received yet.</p>
+                  </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-xl border border-slate-100">
                     <table className="w-full">
-                      <thead className="bg-gradient-to-r from-purple to-light-purple">
+                      <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>
-                          <th className="px-6 py-3 text-left text-sm font-bold text-white font-dmsans tracking-tight">Donor</th>
-                          <th className="px-6 py-3 text-left text-sm font-bold text-white font-dmsans tracking-tight">Amount</th>
-                          <th className="px-6 py-3 text-left text-sm font-bold text-white font-dmsans tracking-tight">Date</th>
-                          <th className="px-6 py-3 text-left text-sm font-bold text-white font-dmsans tracking-tight">Transaction</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Donor</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Transaction</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {donations.map((donation) => (
-                          <tr key={donation.donation_id} className="hover:bg-light-gray">
-                            <td className="px-6 py-4 text-black font-dmsans tracking-tight">
-                              {donation.donor?.name || 'Anonymous'}
+                      <tbody className="divide-y divide-gray-100">
+                        {donations.map((d) => (
+                          <tr key={d.donation_id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 text-sm font-bold text-slate-900 tracking-tight">
+                              {d.donor_name || 'Anonymous'}
                             </td>
-                            <td className="px-6 py-4 font-bold text-purple font-dmsans tracking-tight">
-                              ${parseFloat(donation.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <td className="px-6 py-4 text-sm font-bold text-primary tracking-tight">
+                              ${parseFloat(d.amount).toLocaleString()}
                             </td>
-                            <td className="px-6 py-4 text-gray-800 font-dmsans tracking-tight">
-                              {new Date(donation.created_at).toLocaleDateString()}
+                            <td className="px-6 py-4 text-sm text-slate-600 tracking-tight">
+                              {new Date(d.donated_at || d.created_at).toLocaleDateString()}
                             </td>
-                            <td className="px-6 py-4">
-                              {donation.tx_hash ? (
-                                <a
-                                  href={`https://polygonscan.com/tx/${donation.tx_hash}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-purple hover:text-light-purple underline-animate text-sm font-dmsans tracking-tight font-bold"
-                                >
-                                  View
-                                </a>
-                              ) : (
-                                <span className="text-gray-800 text-sm font-dmsans tracking-tight">Pending</span>
-                              )}
+                            <td className="px-6 py-4 text-sm font-mono text-slate-400 tracking-tight">
+                              {d.transaction_hash || d.tx_hash ? `${(d.transaction_hash || d.tx_hash).slice(0, 6)}...${(d.transaction_hash || d.tx_hash).slice(-4)}` : 'N/A'}
                             </td>
                           </tr>
                         ))}
@@ -289,41 +281,33 @@ const CampaignManagement = () => {
 
             {activeTab === 'milestones' && (
               <div>
-                <h2 className="text-xl font-bold text-black mb-4 font-playfair tracking-tight">Milestones</h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-black tracking-tight">Campaign Milestones</h2>
+                  <Link
+                    to={`/ngo/campaigns/${campaignId}/milestones`}
+                    className="px-4 py-2 bg-primary-fixed/70 text-primary rounded-lg font-bold text-sm hover:bg-primary-fixed transition-all"
+                  >
+                    Manage Milestones
+                  </Link>
+                </div>
                 {milestones.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-800 mb-4 font-dmsans tracking-tight">No milestones created yet.</p>
-                    <button className="px-6 py-3 bg-gradient-to-r from-purple to-light-purple text-white rounded-xl hover-lift shadow-lg transition-all duration-300 font-bold font-dmsans tracking-tight">
-                      Create Milestone
-                    </button>
+                  <div className="text-center py-12">
+                    <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                    <p className="text-gray-500 font-bold tracking-tight">No milestones added yet.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {milestones.map((milestone, index) => (
-                      <div key={milestone.milestone_id} className="border-2 border-gray rounded-lg p-4 hover:border-purple transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <span className="w-8 h-8 bg-gradient-to-br from-purple to-light-purple text-white rounded-full flex items-center justify-center font-bold font-dmsans tracking-tight">
-                                {index + 1}
-                              </span>
-                              <h3 className="font-bold text-black font-playfair tracking-tight">{milestone.title}</h3>
-                            </div>
-                            <p className="text-gray-800 text-sm mb-2 font-dmsans tracking-tight">{milestone.description}</p>
-                            <div className="flex items-center space-x-4 text-sm font-dmsans tracking-tight">
-                              <span className="text-gray-800">
-                                Amount: <span className="font-bold text-purple">${milestone.amount_to_release?.toLocaleString() || '0'}</span>
-                              </span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                milestone.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                                milestone.status === 'SUBMITTED' ? 'bg-yellow/20 text-yellow-700' :
-                                'bg-gray text-black'
-                              }`}>
-                                {milestone.status}
-                              </span>
-                            </div>
-                          </div>
+                    {milestones.map((m) => (
+                      <div key={m.milestone_id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-primary/30 transition-all">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-slate-900 tracking-tight">{m.title}</h4>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                            m.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-primary-fixed/50 text-primary'
+                          }`}>
+                            {m.status}
+                          </span>
                         </div>
+                        <p className="text-sm text-slate-600 line-clamp-2 tracking-tight">{m.description}</p>
                       </div>
                     ))}
                   </div>

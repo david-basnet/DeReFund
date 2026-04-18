@@ -81,7 +81,7 @@ const AdminDisasters = () => {
     const config = statusMap[status] || { bg: 'bg-slate-100', text: 'text-slate-700', icon: AlertTriangle };
     const Icon = config.icon;
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${config.bg} ${config.text} font-dmsans tracking-tight`}>
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${config.bg} ${config.text} tracking-tight`}>
         <Icon className="w-3.5 h-3.5" />
         {status}
       </span>
@@ -97,7 +97,7 @@ const AdminDisasters = () => {
     };
     const colors = severityMap[severity] || { bg: 'bg-slate-300', text: 'text-slate-900' };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text} font-dmsans tracking-tight`}>
+      <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text} tracking-tight`}>
         {severity}
       </span>
     );
@@ -108,8 +108,8 @@ const AdminDisasters = () => {
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 font-playfair tracking-tight">Disaster Management</h1>
-          <p className="text-slate-600 font-dmsans tracking-tight">Review and approve disaster case reports</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">Disaster Management</h1>
+          <p className="text-slate-600 tracking-tight">Review and approve disaster case reports</p>
         </div>
 
         {/* Filters */}
@@ -122,7 +122,7 @@ const AdminDisasters = () => {
                 placeholder="Search disasters..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 font-dmsans tracking-tight"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 tracking-tight"
               />
             </div>
             <div className="relative">
@@ -130,7 +130,7 @@ const AdminDisasters = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="pl-10 pr-8 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 font-dmsans tracking-tight appearance-none bg-white"
+                className="pl-10 pr-8 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 tracking-tight appearance-none bg-white"
               >
                 <option value="PENDING">Pending</option>
                 <option value="APPROVED">Approved</option>
@@ -144,12 +144,12 @@ const AdminDisasters = () => {
         {loading ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-600 mx-auto mb-4"></div>
-            <p className="text-slate-600 font-dmsans tracking-tight">Loading disasters...</p>
+            <p className="text-slate-600 tracking-tight">Loading disasters...</p>
           </div>
         ) : filteredDisasters.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
             <AlertTriangle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600 font-dmsans tracking-tight">No disasters found.</p>
+            <p className="text-slate-600 tracking-tight">No disasters found.</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -177,37 +177,37 @@ const AdminDisasters = () => {
                 )}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-bold text-slate-900 font-playfair tracking-tight flex-1 pr-2">
+                    <h3 className="text-lg font-bold text-slate-900 tracking-tight flex-1 pr-2">
                       {disaster.title}
                     </h3>
                     {getStatusBadge(disaster.status)}
                   </div>
                   
-                  <p className="text-slate-600 mb-4 line-clamp-3 font-dmsans tracking-tight text-sm">
+                  <p className="text-slate-600 mb-4 line-clamp-3 tracking-tight text-sm">
                     {disaster.description}
                   </p>
 
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-slate-600 font-dmsans tracking-tight text-sm">
+                    <div className="flex items-center gap-2 text-slate-600 tracking-tight text-sm">
                       <MapPin className="w-4 h-4" />
                       {disaster.location || 'Location not specified'}
                     </div>
                     {disaster.latitude && disaster.longitude && (
-                      <div className="flex items-center gap-2 text-slate-500 font-dmsans tracking-tight text-xs">
+                      <div className="flex items-center gap-2 text-slate-500 tracking-tight text-xs">
                         <span>📍 {disaster.latitude}, {disaster.longitude}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-slate-600 font-dmsans tracking-tight text-sm">
+                    <div className="flex items-center gap-2 text-slate-600 tracking-tight text-sm">
                       <Calendar className="w-4 h-4" />
                       {new Date(disaster.created_at).toLocaleDateString()}
                     </div>
                     {disaster.submitted_by_name && (
-                      <div className="text-slate-500 font-dmsans tracking-tight text-xs">
+                      <div className="text-slate-500 tracking-tight text-xs">
                         Reported by: {disaster.submitted_by_name}
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-600 font-dmsans tracking-tight text-sm">Severity:</span>
+                      <span className="text-slate-600 tracking-tight text-sm">Severity:</span>
                       {getSeverityBadge(disaster.severity)}
                     </div>
                   </div>
@@ -218,7 +218,7 @@ const AdminDisasters = () => {
                         <button
                           onClick={() => handleStatusUpdate(disaster.case_id, 'APPROVED')}
                           disabled={updatingId === disaster.case_id}
-                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 text-sm font-bold font-dmsans tracking-tight"
+                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 text-sm font-bold tracking-tight"
                         >
                           <CheckCircle className="w-4 h-4" />
                           {updatingId === disaster.case_id ? 'Updating...' : 'Approve'}
@@ -226,7 +226,7 @@ const AdminDisasters = () => {
                         <button
                           onClick={() => handleStatusUpdate(disaster.case_id, 'REJECTED')}
                           disabled={updatingId === disaster.case_id}
-                          className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm font-bold font-dmsans tracking-tight"
+                          className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm font-bold tracking-tight"
                         >
                           <XCircle className="w-4 h-4" />
                           Reject
@@ -235,7 +235,7 @@ const AdminDisasters = () => {
                     )}
                     <Link
                       to={`/disasters/${disaster.case_id}`}
-                      className="flex items-center justify-center gap-2 bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors text-sm font-bold font-dmsans tracking-tight"
+                      className="flex items-center justify-center gap-2 bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors text-sm font-bold tracking-tight"
                     >
                       <Globe className="w-4 h-4" />
                       View

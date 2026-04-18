@@ -1,5 +1,29 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+const publicFetch = async (endpoint) => {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`);
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('Invalid response from server');
+  }
+  if (!response.ok && !data.success) {
+    throw new Error(data.message || 'Request failed');
+  }
+  return data;
+};
+
+export const publicAPI = {
+  impactStats: () => publicFetch('/campaigns/public/stats'),
+  getCampaigns: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return publicFetch(`/campaigns/public${queryString ? `?${queryString}` : ''}`);
+  },
+  getCampaign: (campaignId) => publicFetch(`/campaigns/public/${campaignId}`),
+  getVerifiedNgos: () => publicFetch('/campaigns/public/verified-ngos'),
+};
+
 // Helper function to get auth token
 const getAuthToken = () => {
   return localStorage.getItem('token');
@@ -35,10 +59,15 @@ const apiCall = async (endpoint, options = {}) => {
     // This handles cases where backend returns 201 with success: true
     if (!response.ok && !data.success) {
       // Create error with detailed validation messages
-      const error = new Error(data.message || data.error || 'API request failed');
+      const errorMessage = data.message || data.error || 'API request failed';
+      const error = new Error(errorMessage);
       // Attach validation errors if available
       if (data.errors && Array.isArray(data.errors)) {
         error.errors = data.errors;
+        const messages = data.errors.map((err) => err.msg || err.message).filter(Boolean);
+        if (messages.length) {
+          error.message = `${error.message}: ${messages.join('; ')}`;
+        }
       }
       // Attach full response data for debugging
       error.response = { data };
@@ -73,8 +102,16 @@ export const disasterAPI = {
     const queryString = new URLSearchParams(params).toString();
     return apiCall(`/disasters${queryString ? `?${queryString}` : ''}`);
   },
+  getMyDisasters: (submittedBy, params = {}) => {
+    const query = { ...params, submitted_by: submittedBy };
+    const queryString = new URLSearchParams(query).toString();
+    return apiCall(`/disasters${queryString ? `?${queryString}` : ''}`);
+  },
   getById: (caseId) => apiCall(`/disasters/${caseId}`),
   create: (disasterData) => apiCall('/disasters', { method: 'POST', body: JSON.stringify(disasterData) }),
+  update: (caseId, disasterData) => apiCall(`/disasters/${caseId}`, { method: 'PATCH', body: JSON.stringify(disasterData) }),
+  delete: (caseId) => apiCall(`/disasters/${caseId}`, { method: 'DELETE' }),
+  requestApproval: (caseId) => apiCall(`/disasters/${caseId}/request-approval`, { method: 'PATCH' }),
   updateStatus: (caseId, status) => apiCall(`/disasters/${caseId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 };
 
@@ -86,6 +123,13 @@ export const campaignAPI = {
   },
   getById: (campaignId) => apiCall(`/campaigns/${campaignId}`),
   create: (campaignData) => apiCall('/campaigns', { method: 'POST', body: JSON.stringify(campaignData) }),
+  createDonorProposal: (campaignData) =>
+    apiCall('/campaigns/donor-proposal', { method: 'POST', body: JSON.stringify(campaignData) }),
+  ngoConfirm: (campaignId, approved) =>
+    apiCall(`/campaigns/${campaignId}/ngo-confirm`, {
+      method: 'PATCH',
+      body: JSON.stringify({ approved }),
+    }),
   update: (campaignId, updates) => apiCall(`/campaigns/${campaignId}`, { method: 'PATCH', body: JSON.stringify(updates) }),
 };
 

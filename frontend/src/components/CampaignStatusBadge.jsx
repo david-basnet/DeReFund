@@ -1,56 +1,62 @@
-import { CheckCircle, XCircle, Clock, AlertCircle, ShieldCheck, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertCircle, ShieldCheck, FileText, Building2 } from 'lucide-react';
 
 const CampaignStatusBadge = ({ status, size = 'sm' }) => {
   const statusMap = {
-    LIVE: { 
-      bg: 'bg-green', 
-      text: 'text-white', 
+    LIVE: {
+      bg: 'bg-secondary-container/35',
+      text: 'text-on-secondary-container',
       icon: CheckCircle,
-      label: 'Live'
+      label: 'Live',
     },
-    COMPLETED: { 
-      bg: 'bg-purple', 
-      text: 'text-white', 
+    COMPLETED: {
+      bg: 'bg-primary-container/25',
+      text: 'text-primary-container',
       icon: CheckCircle,
-      label: 'Completed'
+      label: 'Completed',
     },
-    CANCELLED: { 
-      bg: 'bg-red', 
-      text: 'text-white', 
+    CANCELLED: {
+      bg: 'bg-error-container',
+      text: 'text-on-error-container',
       icon: XCircle,
-      label: 'Cancelled'
+      label: 'Cancelled',
     },
-    PENDING_ADMIN_APPROVAL: { 
-      bg: 'bg-yellow', 
-      text: 'text-black', 
+    PENDING_ADMIN_APPROVAL: {
+      bg: 'bg-primary-fixed/60',
+      text: 'text-primary',
       icon: Clock,
-      label: 'Pending Admin Approval'
+      label: 'Pending admin approval',
     },
-    VERIFIED_BY_VOLUNTEERS: { 
-      bg: 'bg-blue', 
-      text: 'text-white', 
+    PENDING_NGO_VERIFICATION: {
+      bg: 'bg-tertiary-fixed/50',
+      text: 'text-tertiary',
+      icon: Building2,
+      label: 'Awaiting NGO',
+    },
+    VERIFIED_BY_VOLUNTEERS: {
+      bg: 'bg-secondary-fixed/60',
+      text: 'text-on-secondary-fixed',
       icon: ShieldCheck,
-      label: 'Verified by Volunteers'
+      label: 'Volunteer verified',
     },
-    PENDING_VERIFICATION: { 
-      bg: 'bg-orange', 
-      text: 'text-white', 
+    PENDING_VERIFICATION: {
+      bg: 'bg-tertiary-container/25',
+      text: 'text-tertiary-container',
       icon: AlertCircle,
-      label: 'Pending Verification'
+      label: 'Pending verification',
     },
-    DRAFT: { 
-      bg: 'bg-gray', 
-      text: 'text-black', 
+    DRAFT: {
+      bg: 'bg-surface-container-high',
+      text: 'text-on-surface-variant',
       icon: FileText,
-      label: 'Draft'
+      label: 'Draft',
     },
   };
 
-  const config = statusMap[status] || { 
-    bg: 'bg-gray-300', 
-    text: 'text-black', 
+  const config = statusMap[status] || {
+    bg: 'bg-surface-container-high',
+    text: 'text-on-surface-variant',
     icon: AlertCircle,
-    label: status || 'Unknown'
+    label: status || 'Unknown',
   };
   const Icon = config.icon;
 
@@ -61,7 +67,9 @@ const CampaignStatusBadge = ({ status, size = 'sm' }) => {
   };
 
   return (
-    <span className={`inline-flex items-center gap-2 ${config.bg} ${config.text} rounded-full font-bold font-dmsans tracking-tight ${sizeClasses[size]}`}>
+    <span
+      className={`inline-flex items-center gap-2 rounded-full font-bold tracking-tight ring-1 ring-outline-variant/25 ${config.bg} ${config.text} ${sizeClasses[size]}`}
+    >
       <Icon className={`${size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-4 h-4' : 'w-5 h-5'}`} />
       {config.label}
     </span>
@@ -69,4 +77,3 @@ const CampaignStatusBadge = ({ status, size = 'sm' }) => {
 };
 
 export default CampaignStatusBadge;
-

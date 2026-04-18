@@ -95,7 +95,7 @@ const AdminUsers = () => {
     const config = statusMap[status] || { bg: 'bg-slate-100', text: 'text-slate-700', icon: ShieldCheck };
     const Icon = config.icon;
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${config.bg} ${config.text} font-dmsans tracking-tight`}>
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${config.bg} ${config.text} tracking-tight`}>
         <Icon className="w-3.5 h-3.5" />
         {status || 'N/A'}
       </span>
@@ -105,12 +105,12 @@ const AdminUsers = () => {
   const getRoleBadge = (role) => {
     const roleMap = {
       ADMIN: { bg: 'bg-slate-700', text: 'text-white' },
-      NGO: { bg: 'bg-blue-600', text: 'text-white' },
+      NGO: { bg: 'bg-primary', text: 'text-white' },
       DONOR: { bg: 'bg-emerald-600', text: 'text-white' },
     };
     const colors = roleMap[role] || { bg: 'bg-slate-300', text: 'text-slate-900' };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text} font-dmsans tracking-tight`}>
+      <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text} tracking-tight`}>
         {role}
       </span>
     );
@@ -121,8 +121,8 @@ const AdminUsers = () => {
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 font-playfair tracking-tight">User Management</h1>
-          <p className="text-slate-600 font-dmsans tracking-tight">View and manage all platform users</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">User Management</h1>
+          <p className="text-slate-600 tracking-tight">View and manage all platform users</p>
         </div>
 
         {/* Filters */}
@@ -135,7 +135,7 @@ const AdminUsers = () => {
                 placeholder="Search by name, email, or ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 font-dmsans tracking-tight"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 tracking-tight"
               />
             </div>
             <div className="relative">
@@ -146,7 +146,7 @@ const AdminUsers = () => {
                   setRoleFilter(e.target.value);
                   setPage(1);
                 }}
-                className="pl-10 pr-8 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 font-dmsans tracking-tight appearance-none bg-white"
+                className="pl-10 pr-8 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent text-slate-900 tracking-tight appearance-none bg-white"
               >
                 <option value="">All Roles</option>
                 <option value="ADMIN">Admin</option>
@@ -161,12 +161,12 @@ const AdminUsers = () => {
         {loading ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-600 mx-auto mb-4"></div>
-            <p className="text-slate-600 font-dmsans tracking-tight">Loading users...</p>
+            <p className="text-slate-600 tracking-tight">Loading users...</p>
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
             <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600 font-dmsans tracking-tight">No users found.</p>
+            <p className="text-slate-600 tracking-tight">No users found.</p>
           </div>
         ) : (
           <>
@@ -175,11 +175,11 @@ const AdminUsers = () => {
                 <table className="w-full">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 font-dmsans tracking-tight">User</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 font-dmsans tracking-tight">Role</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 font-dmsans tracking-tight">Verification</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 font-dmsans tracking-tight">Created</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 font-dmsans tracking-tight">Actions</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 tracking-tight">User</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 tracking-tight">Role</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 tracking-tight">Verification</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 tracking-tight">Created</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-slate-900 tracking-tight">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -187,8 +187,8 @@ const AdminUsers = () => {
                       <tr key={user.user_id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-6 py-4">
                           <div>
-                            <div className="font-bold text-slate-900 font-dmsans tracking-tight">{user.name || 'N/A'}</div>
-                            <div className="text-sm text-slate-600 font-dmsans tracking-tight flex items-center gap-1 mt-1">
+                            <div className="font-bold text-slate-900 tracking-tight">{user.name || 'N/A'}</div>
+                            <div className="text-sm text-slate-600 tracking-tight flex items-center gap-1 mt-1">
                               <Mail className="w-3.5 h-3.5" />
                               {user.email}
                             </div>
@@ -198,12 +198,27 @@ const AdminUsers = () => {
                           {getRoleBadge(user.role)}
                         </td>
                         <td className="px-6 py-4">
-                          {user.role === 'NGO' ? getStatusBadge(user.verification_status || 'PENDING') : (
-                            <span className="text-sm text-slate-500 font-dmsans tracking-tight">N/A</span>
+                          {user.role === 'NGO' ? (
+                            <div className="flex flex-col gap-2">
+                              {getStatusBadge(user.verification_status || 'PENDING')}
+                              {user.document_url && (
+                                <a
+                                  href={user.document_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"
+                                >
+                                  <FileText className="w-3 h-3" />
+                                  View Document
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-slate-500 tracking-tight">N/A</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-1.5 text-sm text-slate-600 font-dmsans tracking-tight">
+                          <div className="flex items-center gap-1.5 text-sm text-slate-600 tracking-tight">
                             <Calendar className="w-4 h-4" />
                             {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                           </div>
@@ -216,7 +231,7 @@ const AdminUsers = () => {
                                 <button
                                   onClick={() => handleVerify(user.user_id, 'APPROVED')}
                                   disabled={verifyingUserId === user.user_id || deletingUserId === user.user_id}
-                                  className="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 text-sm font-bold font-dmsans tracking-tight"
+                                  className="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 text-sm font-bold tracking-tight"
                                 >
                                   <ShieldCheck className="w-4 h-4" />
                                   {verifyingUserId === user.user_id ? 'Verifying...' : 'Approve'}
@@ -224,7 +239,7 @@ const AdminUsers = () => {
                                 <button
                                   onClick={() => handleVerify(user.user_id, 'REJECTED')}
                                   disabled={verifyingUserId === user.user_id || deletingUserId === user.user_id}
-                                  className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm font-bold font-dmsans tracking-tight"
+                                  className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm font-bold tracking-tight"
                                 >
                                   <ShieldX className="w-4 h-4" />
                                   Reject
@@ -237,7 +252,7 @@ const AdminUsers = () => {
                               <button
                                 onClick={() => handleDelete(user.user_id, user.name || user.email)}
                                 disabled={deletingUserId === user.user_id || verifyingUserId === user.user_id}
-                                className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50 text-sm font-bold font-dmsans tracking-tight"
+                                className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50 text-sm font-bold tracking-tight"
                                 title="Delete User"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -259,17 +274,17 @@ const AdminUsers = () => {
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors font-bold font-dmsans tracking-tight"
+                  className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors font-bold tracking-tight"
                 >
                   Previous
                 </button>
-                <span className="text-slate-600 font-dmsans tracking-tight">
+                <span className="text-slate-600 tracking-tight">
                   Page {page} of {Math.ceil(total / limit)}
                 </span>
                 <button
                   onClick={() => setPage(p => Math.min(Math.ceil(total / limit), p + 1))}
                   disabled={page >= Math.ceil(total / limit)}
-                  className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors font-bold font-dmsans tracking-tight"
+                  className="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors font-bold tracking-tight"
                 >
                   Next
                 </button>

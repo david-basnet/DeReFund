@@ -1,7 +1,9 @@
-const { pool } = require('../config/database');
+const { eq } = require('drizzle-orm');
+const { db } = require('../db/client');
+const { users, userVerification, disasterCases } = require('../db/schema');
 const { formatResponse } = require('../utils/helpers');
+const { uploadToCloudinary } = require('../config/cloudinary');
 
-// Upload NGO verification document
 const uploadNGODocument = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -11,93 +13,123 @@ const uploadNGODocument = async (req, res, next) => {
     const userId = req.user.userId;
     const { document_type } = req.body;
 
-    // Check if user is NGO
-    const userCheck = await pool.query('SELECT role FROM users WHERE user_id = $1', [userId]);
-    if (userCheck.rows.length === 0 || userCheck.rows[0].role !== 'NGO') {
+    const [userRow] = await db.select({ role: users.role }).from(users).where(eq(users.user_id, userId)).limit(1);
+
+    if (!userRow || userRow.role !== 'NGO') {
       return res.status(403).json(formatResponse(false, 'Only NGOs can upload verification documents'));
     }
 
-    // Store file in database
     const fileBuffer = req.file.buffer;
     const fileName = req.file.originalname;
     const mimeType = req.file.mimetype;
 
-    // Check if verification record exists
-    const existingVerification = await pool.query(
-      'SELECT * FROM user_verification WHERE user_id = $1',
-      [userId]
-    );
-
-    let result;
-    if (existingVerification.rows.length > 0) {
-      // Update existing verification
-      const updateQuery = `
-        UPDATE user_verification
-        SET document_file = $1, document_filename = $2, document_mimetype = $3,
-            document_type = $4, document_url = '', status = 'PENDING',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = $5
-        RETURNING *
-      `;
-      result = await pool.query(updateQuery, [
-        fileBuffer, fileName, mimeType, document_type || 'REGISTRATION', userId
-      ]);
-    } else {
-      // Create new verification record
-      const insertQuery = `
-        INSERT INTO user_verification (user_id, document_type, document_file, document_filename, document_mimetype, document_url, status)
-        VALUES ($1, $2, $3, $4, $5, '', 'PENDING')
-        RETURNING *
-      `;
-      result = await pool.query(insertQuery, [
-        userId, document_type || 'REGISTRATION', fileBuffer, fileName, mimeType
-      ]);
+    // Upload to Cloudinary
+    let cloudinaryUrl = '';
+    try {
+      const uploadResult = await uploadToCloudinary(fileBuffer, 'ngo_documents');
+      cloudinaryUrl = uploadResult.secure_url;
+    } catch (uploadError) {
+      console.error('Cloudinary upload error:', uploadError);
+      // Fallback to database storage if Cloudinary fails (optional, but good for robustness)
     }
 
-    res.json(formatResponse(true, 'Document uploaded successfully. Waiting for admin approval.', {
-      verification_id: result.rows[0].verification_id,
-      status: result.rows[0].status
-    }));
+    const [existing] = await db
+      .select()
+      .from(userVerification)
+      .where(eq(userVerification.user_id, userId))
+      .limit(1);
+
+    let resultRow;
+    if (existing) {
+      const [row] = await db
+        .update(userVerification)
+        .set({
+          document_file: fileBuffer,
+          document_filename: fileName,
+          document_mimetype: mimeType,
+          document_type: document_type || 'REGISTRATION',
+          document_url: cloudinaryUrl || '',
+          status: 'PENDING',
+          updated_at: new Date(),
+        })
+        .where(eq(userVerification.user_id, userId))
+        .returning();
+      resultRow = row;
+    } else {
+      const [row] = await db
+        .insert(userVerification)
+        .values({
+          user_id: userId,
+          document_type: document_type || 'REGISTRATION',
+          document_file: fileBuffer,
+          document_filename: fileName,
+          document_mimetype: mimeType,
+          document_url: cloudinaryUrl || '',
+          status: 'PENDING',
+        })
+        .returning();
+      resultRow = row;
+    }
+
+    res.json(
+      formatResponse(true, 'Document uploaded successfully. Waiting for admin approval.', {
+        verification_id: resultRow.verification_id,
+        status: resultRow.status,
+        url: resultRow.document_url,
+      })
+    );
   } catch (error) {
     next(error);
   }
 };
 
-// Get NGO verification document (for download)
 const getNGODocument = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const currentUserId = req.user.userId;
 
-    // Check if user is admin or the document owner
-    const userCheck = await pool.query('SELECT role FROM users WHERE user_id = $1', [currentUserId]);
-    const isAdmin = userCheck.rows.length > 0 && userCheck.rows[0].role === 'ADMIN';
+    const [actor] = await db.select({ role: users.role }).from(users).where(eq(users.user_id, currentUserId)).limit(1);
+
+    const isAdmin = actor?.role === 'ADMIN';
     const isOwner = currentUserId === userId;
 
     if (!isAdmin && !isOwner) {
       return res.status(403).json(formatResponse(false, 'Not authorized to view this document'));
     }
 
-    const verification = await pool.query(
-      'SELECT document_file, document_filename, document_mimetype FROM user_verification WHERE user_id = $1',
-      [userId]
-    );
+    const [verification] = await db
+      .select({
+        document_file: userVerification.document_file,
+        document_filename: userVerification.document_filename,
+        document_mimetype: userVerification.document_mimetype,
+        document_url: userVerification.document_url,
+      })
+      .from(userVerification)
+      .where(eq(userVerification.user_id, userId))
+      .limit(1);
 
-    if (verification.rows.length === 0 || !verification.rows[0].document_file) {
+    if (!verification) {
       return res.status(404).json(formatResponse(false, 'Document not found'));
     }
 
-    const { document_file, document_filename, document_mimetype } = verification.rows[0];
+    // If Cloudinary URL exists, redirect to it
+    if (verification.document_url) {
+      return res.redirect(verification.document_url);
+    }
 
-    res.setHeader('Content-Type', document_mimetype);
-    res.setHeader('Content-Disposition', `attachment; filename="${document_filename}"`);
-    res.send(document_file);
+    // Fallback to binary data
+    if (!verification.document_file) {
+      return res.status(404).json(formatResponse(false, 'Document content not found'));
+    }
+
+    res.setHeader('Content-Type', verification.document_mimetype);
+    res.setHeader('Content-Disposition', `attachment; filename="${verification.document_filename}"`);
+    res.send(verification.document_file);
   } catch (error) {
     next(error);
   }
 };
 
-// Upload disaster images
 const uploadDisasterImages = async (req, res, next) => {
   try {
     if (!req.files || req.files.length === 0) {
@@ -107,63 +139,102 @@ const uploadDisasterImages = async (req, res, next) => {
     const userId = req.user.userId;
     const { case_id } = req.body;
 
-    // Check if disaster case exists and belongs to user (or is being created)
     if (case_id) {
-      const disasterCheck = await pool.query(
-        'SELECT submitted_by FROM disaster_cases WHERE case_id = $1',
-        [case_id]
-      );
-      if (disasterCheck.rows.length === 0) {
+      const [disaster] = await db
+        .select({ submitted_by: disasterCases.submitted_by })
+        .from(disasterCases)
+        .where(eq(disasterCases.case_id, case_id))
+        .limit(1);
+
+      if (!disaster) {
         return res.status(404).json(formatResponse(false, 'Disaster case not found'));
       }
-      if (disasterCheck.rows[0].submitted_by !== userId) {
+      if (disaster.submitted_by !== userId) {
         return res.status(403).json(formatResponse(false, 'Not authorized to upload images for this disaster'));
       }
     }
 
-    // Process files
-    const imageFiles = req.files.map(file => file.buffer);
-    const imageFilenames = req.files.map(file => file.originalname);
-    const imageMimetypes = req.files.map(file => file.mimetype);
-
-    if (case_id) {
-      // Update existing disaster case
-      await pool.query(
-        `UPDATE disaster_cases 
-         SET image_files = $1, image_filenames = $2, image_mimetypes = $3, updated_at = CURRENT_TIMESTAMP
-         WHERE case_id = $4`,
-        [imageFiles, imageFilenames, imageMimetypes, case_id]
-      );
+    // Upload images to Cloudinary in parallel
+    const uploadPromises = req.files.map(file => uploadToCloudinary(file.buffer, 'disasters'));
+    let cloudinaryUrls = [];
+    try {
+      const results = await Promise.all(uploadPromises);
+      cloudinaryUrls = results.map(r => r.secure_url);
+    } catch (uploadError) {
+      console.error('Cloudinary multi-upload error:', uploadError);
     }
 
-    res.json(formatResponse(true, 'Images uploaded successfully', {
-      count: req.files.length,
-      filenames: imageFilenames
-    }));
+    const imageFiles = req.files.map((file) => file.buffer);
+    const imageFilenames = req.files.map((file) => file.originalname);
+    const imageMimetypes = req.files.map((file) => file.mimetype);
+
+    if (case_id) {
+      // Get existing images array to append to it
+      const [existingDisaster] = await db
+        .select({ images: disasterCases.images })
+        .from(disasterCases)
+        .where(eq(disasterCases.case_id, case_id))
+        .limit(1);
+      
+      const updatedImages = [...(existingDisaster?.images || []), ...cloudinaryUrls];
+
+      await db
+        .update(disasterCases)
+        .set({
+          images: updatedImages,
+          image_files: imageFiles,
+          image_filenames: imageFilenames,
+          image_mimetypes: imageMimetypes,
+          updated_at: new Date(),
+        })
+        .where(eq(disasterCases.case_id, case_id));
+    }
+
+    res.json(
+      formatResponse(true, 'Images uploaded successfully', {
+        count: req.files.length,
+        filenames: imageFilenames,
+        urls: cloudinaryUrls,
+      })
+    );
   } catch (error) {
     next(error);
   }
 };
 
-// Get disaster image
 const getDisasterImage = async (req, res, next) => {
   try {
     const { caseId, imageIndex } = req.params;
-    const index = parseInt(imageIndex);
+    const index = parseInt(imageIndex, 10);
 
-    const disaster = await pool.query(
-      'SELECT image_files, image_filenames, image_mimetypes FROM disaster_cases WHERE case_id = $1',
-      [caseId]
-    );
+    const [disaster] = await db
+      .select({
+        image_files: disasterCases.image_files,
+        image_filenames: disasterCases.image_filenames,
+        image_mimetypes: disasterCases.image_mimetypes,
+        images: disasterCases.images,
+      })
+      .from(disasterCases)
+      .where(eq(disasterCases.case_id, caseId))
+      .limit(1);
 
-    if (disaster.rows.length === 0 || !disaster.rows[0].image_files || 
-        !disaster.rows[0].image_files[index]) {
+    if (!disaster) {
+      return res.status(404).json(formatResponse(false, 'Disaster not found'));
+    }
+
+    // If Cloudinary URL exists at this index, redirect
+    if (disaster.images && disaster.images[index]) {
+      return res.redirect(disaster.images[index]);
+    }
+
+    // Fallback to binary data
+    if (!disaster.image_files || !disaster.image_files[index]) {
       return res.status(404).json(formatResponse(false, 'Image not found'));
     }
 
-    const imageFile = disaster.rows[0].image_files[index];
-    const filename = disaster.rows[0].image_filenames[index];
-    const mimetype = disaster.rows[0].image_mimetypes[index];
+    const imageFile = disaster.image_files[index];
+    const filename = disaster.image_filenames[index];
+    const mimetype = disaster.image_mimetypes[index];
 
     res.setHeader('Content-Type', mimetype);
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -177,6 +248,5 @@ module.exports = {
   uploadNGODocument,
   getNGODocument,
   uploadDisasterImages,
-  getDisasterImage
+  getDisasterImage,
 };
-

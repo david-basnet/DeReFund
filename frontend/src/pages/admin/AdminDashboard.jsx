@@ -99,9 +99,9 @@ const AdminDashboard = () => {
       title: 'Active Campaigns',
       value: stats.activeCampaigns,
       icon: Activity,
-      color: 'from-blue-600 to-blue-800',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600',
+      color: 'from-primary to-[#001a38]',
+      bgColor: 'bg-primary-fixed/50',
+      iconColor: 'text-primary',
       link: '/admin/campaigns',
       trend: '+5',
     },
@@ -155,17 +155,17 @@ const AdminDashboard = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-4xl font-bold text-slate-900 mb-2 font-playfair tracking-tight">
+                <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">
                   Admin Control Center
                 </h1>
-                <p className="text-slate-600 font-dmsans tracking-tight">
+                <p className="text-slate-600 tracking-tight">
                   Monitor and manage platform operations
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-slate-200">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-slate-700 font-dmsans tracking-tight">System Online</span>
+                  <span className="text-sm font-medium text-slate-700 tracking-tight">System Online</span>
                 </div>
               </div>
             </div>
@@ -191,15 +191,15 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="mb-2">
-                    <div className="text-3xl font-bold text-slate-900 font-playfair tracking-tight group-hover:text-slate-700 transition-colors">
+                    <div className="text-3xl font-bold text-slate-900 tracking-tight group-hover:text-slate-700 transition-colors">
                       {stat.value}
                     </div>
-                    <div className="text-sm text-slate-600 font-dmsans tracking-tight mt-1">
+                    <div className="text-sm text-slate-600 tracking-tight mt-1">
                       {stat.title}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-slate-500 mt-4 group-hover:text-slate-700 transition-colors">
-                    <span className="font-medium font-dmsans tracking-tight">View details</span>
+                    <span className="font-medium tracking-tight">View details</span>
                     <ArrowUpRight className="w-3 h-3" />
                   </div>
                 </Link>
@@ -228,24 +228,24 @@ const AdminDashboard = () => {
                         <Icon className="w-6 h-6 text-white" />
                       </div>
                       {card.urgent && (
-                        <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full font-dmsans tracking-tight">
+                        <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full tracking-tight">
                           Action Required
                         </span>
                       )}
                     </div>
                     <div className="mb-2">
-                      <div className="text-4xl font-bold text-slate-900 font-playfair tracking-tight mb-1">
+                      <div className="text-4xl font-bold text-slate-900 tracking-tight mb-1">
                         {card.value}
                       </div>
-                      <div className="text-lg font-semibold text-slate-800 font-dmsans tracking-tight mb-2">
+                      <div className="text-lg font-semibold text-slate-800 tracking-tight mb-2">
                         {card.title}
                       </div>
-                      <div className="text-sm text-slate-600 font-dmsans tracking-tight">
+                      <div className="text-sm text-slate-600 tracking-tight">
                         {card.description}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-slate-500 mt-4 group-hover:text-slate-700 transition-colors">
-                      <span className="font-medium font-dmsans tracking-tight">Review now</span>
+                      <span className="font-medium tracking-tight">Review now</span>
                       <ArrowUpRight className="w-3 h-3" />
                     </div>
                   </div>
@@ -259,7 +259,7 @@ const AdminDashboard = () => {
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900 font-playfair tracking-tight">Quick Actions</h2>
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Quick Actions</h2>
                 <Zap className="w-5 h-5 text-slate-400" />
               </div>
               <div className="space-y-3">
@@ -272,8 +272,8 @@ const AdminDashboard = () => {
                       <Users className="w-5 h-5 text-slate-700" />
                     </div>
                     <div>
-                      <div className="font-semibold text-slate-900 font-dmsans tracking-tight">Manage Users</div>
-                      <div className="text-sm text-slate-600 font-dmsans tracking-tight">View and verify user accounts</div>
+                      <div className="font-semibold text-slate-900 tracking-tight">Manage Users</div>
+                      <div className="text-sm text-slate-600 tracking-tight">View and verify user accounts</div>
                     </div>
                   </div>
                   <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
@@ -288,8 +288,8 @@ const AdminDashboard = () => {
                       <AlertTriangle className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
-                      <div className="font-semibold text-slate-900 font-dmsans tracking-tight">Review Disasters</div>
-                      <div className="text-sm text-slate-600 font-dmsans tracking-tight">Approve disaster cases</div>
+                      <div className="font-semibold text-slate-900 tracking-tight">Review Disasters</div>
+                      <div className="text-sm text-slate-600 tracking-tight">Approve disaster cases</div>
                     </div>
                   </div>
                   <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
@@ -300,12 +300,12 @@ const AdminDashboard = () => {
                   className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                      <FileText className="w-5 h-5 text-blue-600" />
+                    <div className="p-2 bg-primary-fixed/70 rounded-lg group-hover:bg-primary-fixed transition-colors">
+                      <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <div className="font-semibold text-slate-900 font-dmsans tracking-tight">Approve Campaigns</div>
-                      <div className="text-sm text-slate-600 font-dmsans tracking-tight">Final campaign approvals</div>
+                      <div className="font-semibold text-slate-900 tracking-tight">Approve Campaigns</div>
+                      <div className="text-sm text-slate-600 tracking-tight">Final campaign approvals</div>
                     </div>
                   </div>
                   <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
@@ -320,8 +320,8 @@ const AdminDashboard = () => {
                       <BarChart3 className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
-                      <div className="font-semibold text-slate-900 font-dmsans tracking-tight">Activity Logs</div>
-                      <div className="text-sm text-slate-600 font-dmsans tracking-tight">View platform activity</div>
+                      <div className="font-semibold text-slate-900 tracking-tight">Activity Logs</div>
+                      <div className="text-sm text-slate-600 tracking-tight">View platform activity</div>
                     </div>
                   </div>
                   <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
@@ -332,30 +332,30 @@ const AdminDashboard = () => {
             {/* Platform Overview */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900 font-playfair tracking-tight">Platform Overview</h2>
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Platform Overview</h2>
                 <Globe className="w-5 h-5 text-slate-400" />
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                   <div>
-                    <div className="text-sm text-slate-600 font-dmsans tracking-tight mb-1">Total Campaigns</div>
-                    <div className="text-2xl font-bold text-slate-900 font-playfair tracking-tight">{stats.totalCampaigns}</div>
+                    <div className="text-sm text-slate-600 tracking-tight mb-1">Total Campaigns</div>
+                    <div className="text-2xl font-bold text-slate-900 tracking-tight">{stats.totalCampaigns}</div>
                   </div>
                   <FileText className="w-8 h-8 text-slate-400" />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                   <div>
-                    <div className="text-sm text-slate-600 font-dmsans tracking-tight mb-1">Total Donations</div>
-                    <div className="text-2xl font-bold text-slate-900 font-playfair tracking-tight">{stats.totalDonations}</div>
+                    <div className="text-sm text-slate-600 tracking-tight mb-1">Total Donations</div>
+                    <div className="text-2xl font-bold text-slate-900 tracking-tight">{stats.totalDonations}</div>
                   </div>
                   <TrendingUp className="w-8 h-8 text-slate-400" />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                   <div>
-                    <div className="text-sm text-slate-600 font-dmsans tracking-tight mb-1">Total Raised</div>
-                    <div className="text-2xl font-bold text-emerald-600 font-playfair tracking-tight">
+                    <div className="text-sm text-slate-600 tracking-tight mb-1">Total Raised</div>
+                    <div className="text-2xl font-bold text-emerald-600 tracking-tight">
                       ${stats.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>

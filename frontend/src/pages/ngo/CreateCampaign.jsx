@@ -11,13 +11,32 @@ const CreateCampaign = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [disasters, setDisasters] = useState([]);
+  const [imageInput, setImageInput] = useState('');
+  const [imageUrls, setImageUrls] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     target_amount: '',
     case_id: '',
-    images: [],
+    verification_threshold: 20,
   });
+
+  const handleAddImageUrl = () => {
+    if (imageInput.trim()) {
+      try {
+        new URL(imageInput.trim());
+        setImageUrls(prev => [...prev, imageInput.trim()]);
+        setImageInput('');
+        setError('');
+      } catch {
+        setError('Please enter a valid image URL');
+      }
+    }
+  };
+
+  const handleRemoveImageUrl = (index) => {
+    setImageUrls(prev => prev.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     // Fetch approved disasters for dropdown
@@ -84,19 +103,23 @@ const CreateCampaign = () => {
         return;
       }
 
+      if (formData.verification_threshold < 5 || formData.verification_threshold > 50) {
+        setError('Verification threshold must be between 5 and 50');
+        setLoading(false);
+        return;
+      }
+
       const campaignData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         target_amount: parseFloat(formData.target_amount),
         case_id: formData.case_id,
-        ...(formData.images.length > 0 && { images: formData.images }),
+        verification_threshold: parseInt(formData.verification_threshold),
+        ...(imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
       };
 
       const response = await campaignAPI.create(campaignData);
-      
-      console.log('Campaign creation response:', response); // Debug log
-      
-      // Handle response structure - backend returns { success, message, data: { campaign } }
+
       if (response && response.success) {
         // Always redirect to My Campaigns page after successful creation
         navigate('/ngo/campaigns');
@@ -163,23 +186,16 @@ const CreateCampaign = () => {
         }
         
         const data = await response.json();
-        console.log('Verification status API response:', data);
-        
+
         if (data.success && data.data) {
           const status = data.data.verification_status;
-          console.log('Raw verification_status from backend:', status, 'Type:', typeof status);
-          
-          // If status is null/empty, it means ACTION_REQUIRED (no documents uploaded)
-          // Otherwise use the actual status from backend
-          const finalStatus = (!status || status === null || status === undefined || status === '') 
-            ? 'ACTION_REQUIRED' 
-            : String(status).toUpperCase().trim(); // Ensure uppercase and trim whitespace
-          
-          console.log('Final verification status:', finalStatus);
+
+          const finalStatus = (!status || status === null || status === undefined || status === '')
+            ? 'ACTION_REQUIRED'
+            : String(status).toUpperCase().trim();
+
           setVerificationStatus(finalStatus);
-          // Always update localStorage with the latest status
           localStorage.setItem('ngo_verification_status', finalStatus);
-          console.log('Updated localStorage with status:', finalStatus);
         } else {
           // If API response structure is unexpected, check localStorage
           console.log('Unexpected API response structure, checking localStorage');
@@ -214,8 +230,8 @@ const CreateCampaign = () => {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
           <div className="text-center bg-white rounded-xl shadow-lg p-8 max-w-md">
             <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-black mb-4 font-playfair tracking-tight">Access Denied</h2>
-            <p className="text-gray-800 font-dmsans tracking-tight">Only NGOs can create campaigns.</p>
+            <h2 className="text-2xl font-bold text-black mb-4 tracking-tight">Access Denied</h2>
+            <p className="text-gray-800 tracking-tight">Only NGOs can create campaigns.</p>
           </div>
         </div>
       </NGOLayout>
@@ -226,15 +242,10 @@ const CreateCampaign = () => {
   const statusUpper = verificationStatus ? String(verificationStatus).toUpperCase().trim() : '';
   const canCreateCampaign = statusUpper === 'APPROVED';
   
-  // Debug log
-  console.log('CreateCampaign - verificationStatus:', verificationStatus, 'statusUpper:', statusUpper, 'canCreateCampaign:', canCreateCampaign, 'checkingVerification:', checkingVerification);
-  
-  // Also check localStorage as fallback
   const storedStatus = localStorage.getItem('ngo_verification_status');
   const storedStatusUpper = storedStatus ? String(storedStatus).toUpperCase().trim() : '';
   const canCreateFromStorage = storedStatusUpper === 'APPROVED';
-  console.log('Stored status from localStorage:', storedStatus, 'canCreateFromStorage:', canCreateFromStorage);
-  
+
   // Allow access if either check passes
   const finalCanCreate = canCreateCampaign || canCreateFromStorage;
 
@@ -247,10 +258,10 @@ const CreateCampaign = () => {
             <div className="bg-white rounded-xl shadow-lg border-2 border-slate-200 p-8">
               <div className="text-center mb-6">
                 <AlertCircle className="w-20 h-20 mx-auto mb-4 text-slate-500" />
-                <h1 className="text-3xl font-bold text-black mb-3 font-playfair tracking-tight">
+                <h1 className="text-3xl font-bold text-black mb-3 tracking-tight">
                   Verification Required
                 </h1>
-                <p className="text-gray-700 text-lg font-dmsans tracking-tight mb-6">
+                <p className="text-gray-700 text-lg tracking-tight mb-6">
                   Please go to Profile Settings and submit your verification documents. Once approved, you will be able to create campaigns.
                 </p>
               </div>
@@ -258,13 +269,13 @@ const CreateCampaign = () => {
               <div className="flex gap-4 justify-center">
                 <button
                   onClick={() => navigate('/ngo/profile')}
-                  className="bg-purple text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-colors border-2 border-purple-800 font-bold font-dmsans tracking-tight"
+                  className="bg-primary text-on-primary px-6 py-3 rounded-xl hover:opacity-95 transition-colors border-2 border-primary-container font-bold tracking-tight"
                 >
                   Go to Profile Settings
                 </button>
                 <button
                   onClick={() => navigate('/ngo')}
-                  className="bg-slate-100 text-black border-2 border-slate-300 px-6 py-3 rounded-xl hover:bg-slate-200 hover:border-slate-400 transition-colors font-bold font-dmsans tracking-tight"
+                  className="bg-slate-100 text-black border-2 border-slate-300 px-6 py-3 rounded-xl hover:bg-slate-200 hover:border-slate-400 transition-colors font-bold tracking-tight"
                 >
                   Back to Dashboard
                 </button>
@@ -282,8 +293,8 @@ const CreateCampaign = () => {
         <div className="p-6 lg:p-8">
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-              <Loader2 className="w-12 h-12 text-purple animate-spin mx-auto mb-4" />
-              <p className="text-gray-700 font-dmsans tracking-tight">Checking verification status...</p>
+              <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+              <p className="text-gray-700 tracking-tight">Checking verification status...</p>
             </div>
           </div>
         </div>
@@ -297,162 +308,193 @@ const CreateCampaign = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-black mb-2 font-playfair tracking-tight">Create New Campaign</h1>
-            <p className="text-gray-700 font-dmsans tracking-tight">Fill out the form below to start a new fundraising campaign</p>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Create New Campaign</h1>
+            <p className="text-slate-600 tracking-tight">Launch a relief effort linked to an approved disaster case</p>
           </div>
-        
-          {error && (
-            <div className="bg-red-50 border-2 border-red-200 text-red-800 px-6 py-4 rounded-xl mb-6">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="font-semibold font-dmsans tracking-tight mb-1">{error}</p>
-                  {error.includes('Validation failed:') && (
-                    <ul className="list-disc list-inside text-sm mt-2 space-y-1">
-                      {error.split('Validation failed:')[1]?.split(',').map((err, idx) => (
-                        <li key={idx} className="font-dmsans tracking-tight">{err.trim()}</li>
-                      ))}
-                    </ul>
-                  )}
+
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6 lg:p-8">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl flex items-center gap-3 text-red-800 font-bold tracking-tight">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Title & Description */}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 uppercase tracking-widest">
+                    <FileText className="w-4 h-4 text-primary" />
+                    Campaign Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50 text-black font-bold tracking-tight transition-all"
+                    placeholder="Emergency Relief for..."
+                    required
+                  />
+                  <p className="text-xs text-slate-500 font-medium">A clear, impactful title for your campaign</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 uppercase tracking-widest">
+                    <AlertCircle className="w-4 h-4 text-primary" />
+                    Detailed Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows="6"
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50 text-black font-bold tracking-tight transition-all"
+                    placeholder="Describe the situation, the impact of donations, and your plan for relief..."
+                    required
+                  ></textarea>
+                  <p className="text-xs text-slate-500 font-medium">Explain why this campaign is needed and how funds will be used</p>
                 </div>
               </div>
-            </div>
-          )}
 
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-purple-100 p-8 space-y-8">
-            {/* Campaign Title */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-bold text-black font-dmsans tracking-tight">
-                <FileText className="w-4 h-4 text-purple" />
-                Campaign Title *
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple focus:border-purple bg-white text-black font-dmsans tracking-tight transition-all"
-                placeholder="Enter a compelling campaign title..."
-                required
-              />
-            </div>
+              {/* Target Amount, Disaster Case, and Verification Threshold in Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 uppercase tracking-widest">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    Target Amount (USD) *
+                  </label>
+                  <input
+                    type="number"
+                    name="target_amount"
+                    value={formData.target_amount}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50 text-black font-bold tracking-tight transition-all"
+                    placeholder="50000"
+                    min="1"
+                    step="0.01"
+                    required
+                  />
+                  <p className="text-xs text-slate-500 font-medium tracking-tight">Set a realistic fundraising goal</p>
+                </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-bold text-black font-dmsans tracking-tight">
-                <FileText className="w-4 h-4 text-purple" />
-                Description *
-              </label>
-              <textarea
-                rows={6}
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple focus:border-purple bg-white text-black font-dmsans tracking-tight transition-all resize-none"
-                placeholder="Describe your campaign, its goals, and how the funds will be used..."
-                required
-              />
-              <p className="text-xs text-gray-500 font-dmsans tracking-tight">Be detailed and transparent about your campaign's purpose</p>
-            </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 uppercase tracking-widest">
+                    <Globe className="w-4 h-4 text-primary" />
+                    Disaster Case *
+                  </label>
+                  <select
+                    name="case_id"
+                    value={formData.case_id}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50 text-black font-bold tracking-tight transition-all"
+                    required
+                  >
+                    <option value="">Select a disaster case</option>
+                    {disasters.length === 0 ? (
+                      <option value="" disabled>No approved disasters available</option>
+                    ) : (
+                      disasters.map((disaster) => (
+                        <option key={disaster.case_id} value={disaster.case_id}>
+                          {disaster.title} - {disaster.location}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <p className="text-xs text-slate-500 font-medium tracking-tight">Link to an approved disaster case</p>
+                </div>
 
-            {/* Target Amount and Disaster Case in Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-bold text-black font-dmsans tracking-tight">
-                  <DollarSign className="w-4 h-4 text-purple" />
-                  Target Amount (USD) *
-                </label>
-                <input
-                  type="number"
-                  name="target_amount"
-                  value={formData.target_amount}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple focus:border-purple bg-white text-black font-dmsans tracking-tight transition-all"
-                  placeholder="50000"
-                  min="1"
-                  step="0.01"
-                  required
-                />
-                <p className="text-xs text-gray-500 font-dmsans tracking-tight">Set a realistic fundraising goal</p>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 uppercase tracking-widest">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    Verification Threshold *
+                  </label>
+                  <input
+                    type="number"
+                    name="verification_threshold"
+                    value={formData.verification_threshold}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50 text-black font-bold tracking-tight transition-all"
+                    placeholder="20"
+                    min="5"
+                    max="50"
+                    required
+                  />
+                  <p className="text-xs text-slate-500 font-medium tracking-tight">Required volunteer votes (min 5, max 50)</p>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-bold text-black font-dmsans tracking-tight">
-                  <Globe className="w-4 h-4 text-purple" />
-                  Disaster Case *
+              {/* Images Section */}
+              <div className="space-y-4">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 uppercase tracking-widest">
+                  <ImageIcon className="w-4 h-4 text-primary" />
+                  Campaign Images
                 </label>
-                <select
-                  name="case_id"
-                  value={formData.case_id}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple focus:border-purple bg-white text-black font-bold font-dmsans tracking-tight transition-all"
-                  required
-                >
-                  <option value="">Select a disaster case</option>
-                  {disasters.length === 0 ? (
-                    <option value="" disabled>No approved disasters available</option>
-                  ) : (
-                    disasters.map((disaster) => (
-                      <option key={disaster.case_id} value={disaster.case_id}>
-                        {disaster.title} - {disaster.location}
-                      </option>
-                    ))
-                  )}
-                </select>
-                <p className="text-xs text-gray-500 font-dmsans tracking-tight">Link to an approved disaster case</p>
-              </div>
-            </div>
-
-            {/* Image URLs */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-bold text-black font-dmsans tracking-tight">
-                <ImageIcon className="w-4 h-4 text-purple" />
-                Image URLs (Optional)
-              </label>
-              <textarea
-                name="images"
-                value={formData.images.join('\n')}
-                onChange={(e) => {
-                  const images = e.target.value.split('\n').filter(url => url.trim());
-                  setFormData(prev => ({ ...prev, images }));
-                }}
-                rows={4}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple focus:border-purple bg-white text-black font-dmsans tracking-tight transition-all resize-none"
-                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-              />
-              <p className="text-xs text-gray-500 font-dmsans tracking-tight">
-                Enter image URLs, one per line. Use image hosting services like Imgur or Cloudinary.
-              </p>
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 bg-purple text-white px-8 py-3 rounded-xl hover:bg-purple-700 shadow-lg border-2 border-purple-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold font-dmsans tracking-tight"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Creating Campaign...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-5 h-5" />
-                    Create Campaign
-                  </>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={imageInput}
+                    onChange={(e) => setImageInput(e.target.value)}
+                    className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50 text-black font-bold tracking-tight transition-all"
+                    placeholder="https://images.unsplash.com/photo..."
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddImageUrl}
+                    className="px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all font-bold tracking-tight shadow-md"
+                  >
+                    Add
+                  </button>
+                </div>
+                
+                {imageUrls.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    {imageUrls.map((url, index) => (
+                      <div key={index} className="relative group rounded-xl overflow-hidden border-2 border-slate-100 shadow-sm">
+                        <img src={url} alt={`Campaign ${index}`} className="w-full h-24 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImageUrl(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/ngo')}
-                className="flex-1 sm:flex-initial bg-slate-100 text-black border-2 border-slate-300 px-8 py-3 rounded-xl hover:bg-slate-200 hover:border-slate-400 transition-colors font-bold font-dmsans tracking-tight"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+                <p className="text-xs text-slate-500 font-medium tracking-tight">
+                  Add image URLs for your campaign gallery (Unsplash links recommended)
+                </p>
+              </div>
+
+              {/* Form Buttons */}
+              <div className="flex gap-4 pt-6 border-t-2 border-slate-50">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-4 bg-gradient-to-r from-primary to-[#001a38] text-white rounded-xl hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-black text-lg tracking-tighter"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Creating Campaign...
+                    </>
+                  ) : (
+                    'Launch Campaign'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/ngo/campaigns')}
+                  className="px-8 py-4 bg-white text-slate-900 border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold tracking-tight"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </NGOLayout>

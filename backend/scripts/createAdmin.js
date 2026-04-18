@@ -1,48 +1,44 @@
 #!/usr/bin/env node
 
 /**
- * Script to create an admin user
- * 
+ * Create an admin user (Drizzle).
+ *
  * Usage:
  *   node scripts/createAdmin.js <name> <email> <password>
- * 
- * Example:
- *   node scripts/createAdmin.js "Admin User" admin@example.com AdminPass123
- * 
- * Or use environment variables:
- *   ADMIN_NAME="Admin User" ADMIN_EMAIL="admin@example.com" ADMIN_PASSWORD="AdminPass123" node scripts/createAdmin.js
+ *
+ * Or:
+ *   ADMIN_NAME="..." ADMIN_EMAIL="..." ADMIN_PASSWORD="..." node scripts/createAdmin.js
  */
 
-const { pool } = require('../src/config/database');
-const { hashPassword } = require('../src/utils/helpers');
 const readline = require('readline');
+const { db } = require('../src/db/client');
+const { users } = require('../src/db/schema');
+const { eq } = require('drizzle-orm');
+const { hashPassword } = require('../src/utils/helpers');
+const { pool } = require('../src/config/database');
 
-// Create readline interface for interactive input
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
 async function createAdmin() {
   try {
-    let name, email, password;
+    let name;
+    let email;
+    let password;
 
-    // Check if arguments are provided via command line
     if (process.argv.length >= 5) {
       name = process.argv[2];
       email = process.argv[3];
       password = process.argv[4];
-    } 
-    // Check if environment variables are set
-    else if (process.env.ADMIN_NAME && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+    } else if (process.env.ADMIN_NAME && process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
       name = process.env.ADMIN_NAME;
       email = process.env.ADMIN_EMAIL;
       password = process.env.ADMIN_PASSWORD;
-    }
-    // Otherwise, prompt interactively
-    else {
+    } else {
       console.log('=== Create Admin User ===\n');
       name = await question('Enter admin name: ');
       email = await question('Enter admin email: ');
@@ -50,7 +46,6 @@ async function createAdmin() {
       console.log('');
     }
 
-    // Validate inputs
     if (!name || name.trim().length < 2) {
       throw new Error('Name must be at least 2 characters');
     }
@@ -64,10 +59,10 @@ async function createAdmin() {
       throw new Error('Password must contain at least one uppercase letter, one lowercase letter, and one number');
     }
 
-    // Check if user already exists
-    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email.trim().toLowerCase()]);
-    if (existingUser.rows.length > 0) {
-      const existing = existingUser.rows[0];
+    const normalizedEmail = email.trim().toLowerCase();
+    const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
+
+    if (existing) {
       if (existing.role === 'ADMIN') {
         console.log('⚠️  Admin user with this email already exists!');
         console.log(`   User ID: ${existing.user_id}`);
@@ -75,31 +70,33 @@ async function createAdmin() {
         console.log(`   Email: ${existing.email}`);
         console.log(`   Role: ${existing.role}`);
         rl.close();
+        await pool.end();
         process.exit(0);
-      } else {
-        throw new Error(`User with email ${email} already exists with role ${existing.role}. Cannot convert to ADMIN.`);
       }
+      throw new Error(`User with email ${email} already exists with role ${existing.role}. Cannot convert to ADMIN.`);
     }
 
-    // Hash password
     console.log('Hashing password...');
     const password_hash = await hashPassword(password);
 
-    // Insert admin user
     console.log('Creating admin user...');
-    const query = `
-      INSERT INTO users (name, email, password_hash, role, is_active)
-      VALUES ($1, $2, $3, 'ADMIN', true)
-      RETURNING user_id, name, email, role, is_active, created_at
-    `;
-    
-    const result = await pool.query(query, [
-      name.trim(),
-      email.trim().toLowerCase(),
-      password_hash
-    ]);
-
-    const admin = result.rows[0];
+    const [admin] = await db
+      .insert(users)
+      .values({
+        name: name.trim(),
+        email: normalizedEmail,
+        password_hash,
+        role: 'ADMIN',
+        is_active: true,
+      })
+      .returning({
+        user_id: users.user_id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        is_active: users.is_active,
+        created_at: users.created_at,
+      });
 
     console.log('\n✅ Admin user created successfully!');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -110,10 +107,6 @@ async function createAdmin() {
     console.log(`Active:     ${admin.is_active}`);
     console.log(`Created:    ${admin.created_at}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('\n📝 You can now log in with this admin account at:');
-    console.log('   http://localhost:5173 (or your frontend URL)');
-    console.log('\n⚠️  Keep these credentials secure!');
-
   } catch (error) {
     console.error('\n❌ Error creating admin user:');
     console.error(`   ${error.message}`);
@@ -127,6 +120,4 @@ async function createAdmin() {
   }
 }
 
-// Run the script
 createAdmin();
-

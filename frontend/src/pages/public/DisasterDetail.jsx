@@ -1,157 +1,216 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { disasterAPI } from '../../utils/api';
+
+const statusConfig = {
+  PENDING: { label: 'Pending admin approval', badge: 'bg-amber-100 text-amber-800' },
+  APPROVED: { label: 'Approved for campaign promotion', badge: 'bg-emerald-100 text-emerald-800' },
+  REJECTED: { label: 'Rejected', badge: 'bg-red-100 text-red-700' },
+};
 
 const DisasterDetail = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { disasterId } = useParams();
+  const [disaster, setDisaster] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  }, []);
+    const loadDisaster = async () => {
+      try {
+        setLoading(true);
+        const response = await disasterAPI.getById(disasterId);
+        const data = response.data?.disaster || response.disaster || response.data || response;
+        if (!data) {
+          setError('Disaster not found.');
+          setDisaster(null);
+        } else {
+          setDisaster(data);
+        }
+      } catch (err) {
+        console.error('Error fetching disaster detail:', err);
+        setError(err.message || 'Failed to load disaster details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDisaster();
+  }, [disasterId]);
+
+  const handlePromote = () => {
+    navigate(`/donor/create-campaign?case_id=${disaster.case_id}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-surface text-on-surface selection:bg-primary-fixed">
+        <Navbar />
+        <main className="pt-24 pb-20 px-6 max-w-7xl mx-auto text-center">Loading disaster details…</main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !disaster) {
+    return (
+      <div className="bg-surface text-on-surface selection:bg-primary-fixed">
+        <Navbar />
+        <main className="pt-24 pb-20 px-6 max-w-7xl mx-auto">
+          <div className="rounded-3xl bg-surface-container-lowest p-10 text-center">
+            <p className="text-lg font-semibold text-on-surface">{error || 'Disaster details unavailable.'}</p>
+            <Link to="/disasters" className="mt-6 inline-flex px-5 py-3 bg-primary text-on-primary rounded-xl font-bold">
+              Back to disaster list
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const status = statusConfig[disaster.status] || { label: disaster.status || 'Unknown', badge: 'bg-slate-100 text-slate-700' };
 
   return (
     <div className="bg-surface text-on-surface selection:bg-primary-fixed">
       <Navbar />
 
-      <main className="pt-24 pb-20">
-        {/* Hero Section */}
-        <section className="max-w-7xl mx-auto px-6 mb-12">
+      <main className="pt-24 pb-20 px-6">
+        <section className="max-w-7xl mx-auto mb-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-7 space-y-6">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="bg-tertiary-container text-on-tertiary-container px-3 py-1 text-xs font-bold tracking-widest rounded uppercase">
-                  CRITICAL SEVERITY
+                <span className="bg-surface-container-high px-3 py-1 text-xs font-bold tracking-widest rounded-full uppercase text-on-surface-variant">
+                  {disaster.severity || 'Medium'} severity
                 </span>
-                <span className="flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-3 py-1 text-xs font-bold tracking-widest rounded uppercase">
-                  <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    verified
-                  </span>
-                  Verified Relief
+                <span className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full uppercase ${status.badge}`}>
+                  {status.label}
                 </span>
-                <span className="text-outline text-sm font-medium">Last updated: 14 mins ago</span>
+                <span className="text-outline text-sm font-medium">
+                  Reported by {disaster.submitted_by_name || 'a community responder'}
+                </span>
               </div>
 
               <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-tight text-on-surface">
-                Coastal Cyclone <br />
-                <span className="text-primary italic">Amara Relief</span>
+                {disaster.title}
               </h1>
 
-              <p className="text-xl text-on-surface-variant leading-relaxed font-body max-w-2xl">
-                A Category 4 storm has made landfall, affecting over 1.2 million residents across the southeastern
-                coastline. Critical infrastructure has been compromised, leaving thousands without shelter or potable
-                water. Horizon Relief is coordinating with verified partners to deliver immediate medical aid and
-                nutritional support.
+              <p className="text-xl text-on-surface-variant leading-relaxed max-w-3xl">
+                {disaster.description}
               </p>
             </div>
 
-            {/* Status Card */}
-            <div className="lg:col-span-5 bg-surface-container-lowest p-8 rounded-xl shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <span className="material-symbols-outlined text-9xl">storm</span>
-              </div>
-              <div className="relative z-10 space-y-8">
+            <div className="lg:col-span-5 bg-surface-container-lowest p-8 rounded-3xl shadow-ambient overflow-hidden">
+              {disaster.images?.[0] ? (
+                <img
+                  src={disaster.images[0]}
+                  alt={disaster.title}
+                  className="w-full h-56 object-cover rounded-3xl mb-6"
+                />
+              ) : (
+                <div className="w-full h-56 rounded-3xl bg-surface-container-high flex items-center justify-center text-on-surface-variant mb-6">
+                  No disaster image available
+                </div>
+              )}
+
+              <div className="space-y-4">
                 <div>
-                  <div className="text-sm font-bold text-outline tracking-widest uppercase mb-1">Impact Stats</div>
-                  <div className="text-4xl font-black text-primary tracking-tighter">1.2M+ People</div>
-                  <div className="text-on-surface-variant">Estimated displacement and urgent need</div>
+                  <div className="text-sm font-semibold text-on-surface-variant uppercase tracking-[0.28em] mb-2">
+                    Location
+                  </div>
+                  <p className="text-lg font-bold text-on-surface">{disaster.location}</p>
                 </div>
 
-                <div className="h-px bg-surface-container" />
+                {disaster.latitude && disaster.longitude && (
+                  <div>
+                    <div className="text-sm font-semibold text-on-surface-variant uppercase tracking-[0.28em] mb-2">
+                      Coordinates
+                    </div>
+                    <p className="text-sm text-on-surface">{`${disaster.latitude}, ${disaster.longitude}`}</p>
+                  </div>
+                )}
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <div className="text-xs font-bold text-outline tracking-widest uppercase">Verified Teams</div>
-                    <div className="text-2xl font-bold">42 Active</div>
+                <div>
+                  <div className="text-sm font-semibold text-on-surface-variant uppercase tracking-[0.28em] mb-2">
+                    Admin review
                   </div>
-                  <div>
-                    <div className="text-xs font-bold text-outline tracking-widest uppercase">Supply Chain</div>
-                    <div className="text-2xl font-bold text-secondary">Operational</div>
-                  </div>
+                  <p className="text-sm text-on-surface-variant">
+                    {disaster.status === 'APPROVED'
+                      ? 'This disaster is approved and can be promoted into a campaign.'
+                      : disaster.status === 'PENDING'
+                      ? 'An administrator must approve this disaster before it can be promoted.'
+                      : 'This disaster report was rejected and cannot be promoted.'}
+                  </p>
                 </div>
 
-                <button
-                  type="button"
-                  className="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-white font-bold rounded-md shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all duration-300"
-                >
-                  Support All Active Campaigns
-                </button>
+                {user?.role === 'DONOR' && disaster.status === 'APPROVED' && (
+                  <button
+                    type="button"
+                    onClick={handlePromote}
+                    className="w-full py-4 bg-primary text-on-primary rounded-3xl font-semibold shadow-lg shadow-primary/20 hover:bg-primary-container transition-colors"
+                  >
+                    Promote this disaster to a campaign
+                  </button>
+                )}
+
+                {user?.role !== 'DONOR' && disaster.status === 'APPROVED' && (
+                  <div className="rounded-3xl border border-primary/15 bg-primary/5 p-4 text-sm text-on-surface-variant">
+                    Approved disasters can be promoted by donors into NGO-backed campaigns.
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </section>
 
-        {/* Map & Context */}
-        <section className="max-w-7xl mx-auto px-6 mb-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="md:col-span-3 h-[500px] rounded-xl overflow-hidden bg-surface-container shadow-sm relative group">
-              <img
-                className="w-full h-full object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQxQA14hnV0UmLtgVjRQWu1z1G34xFcBH1NqKDAVFt4mGwzFo_Dxep7DDg-Q_D6DR3cHft9BFMTIvA0LXtvp8oYbVZZza8v20780W-qfe9hAglkW3l4YJ6zFPudLIhFHKq2CqWzPbEFNA-plXAKS6xS5XIh5rwF8-1dih9qtQ7eWSBAU6PRTO25AUkEMtDM38cTnt4cvpcAwE6UN57v-n58ER8DPo5Bk-_KB-9h_NQt_VGJFngsz_oQAdGuzPOsjKW-tXCmDrnyxU"
-                alt="High detail topographical map showing storm trajectory"
-              />
-              <div className="absolute bottom-6 left-6 bg-surface-container-lowest/90 backdrop-blur p-4 rounded-lg shadow-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-tertiary rounded-full animate-pulse" />
-                  <div>
-                    <div className="text-sm font-bold uppercase tracking-wider">Epicenter Located</div>
-                    <div className="text-xs text-outline">District of Valoria &amp; Surrounds</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-1 space-y-6">
-              <div className="bg-surface-container-low p-6 rounded-xl">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">info</span>
-                  Key Narrative
-                </h3>
-                <p className="text-sm text-on-surface-variant leading-relaxed italic">
-                  &quot;The storm surged at 3 AM local time. Our priority is the high-density coastal settlements where
-                  flooding reached historic levels.&quot;
-                </p>
-                <div className="mt-4 text-xs font-bold text-on-surface uppercase">
-                  — Chief Coordinator, Red Cross
-                </div>
-              </div>
-
-              <div className="bg-surface-container-low p-6 rounded-xl">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary">water_drop</span>
-                  Critical Needs
-                </h3>
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-3 text-sm font-medium">
-                    <span className="w-1.5 h-1.5 bg-primary rounded-full" />
-                    Potable Water Kits
-                  </li>
-                  <li className="flex items-center gap-3 text-sm font-medium">
-                    <span className="w-1.5 h-1.5 bg-primary rounded-full" />
-                    Mobile Medical Units
-                  </li>
-                  <li className="flex items-center gap-3 text-sm font-medium">
-                    <span className="w-1.5 h-1.5 bg-primary rounded-full" />
-                    Satellite Comm Links
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Active Relief Campaigns (static cards for now) */}
-        <section className="max-w-7xl mx-auto px-6">
-          <div className="flex items-end justify-between mb-8 border-b-2 border-surface-container pb-4">
-            <div>
-              <h2 className="text-3xl font-black tracking-tight">Active Relief Campaigns</h2>
-              <p className="text-on-surface-variant mt-1">
-                Direct support for verified on-ground responders
+        <section className="max-w-7xl mx-auto grid gap-8 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-8">
+            <div className="rounded-3xl bg-surface-container-low p-8 shadow-ambient">
+              <h2 className="text-2xl font-bold mb-4">What this means</h2>
+              <p className="text-on-surface-variant leading-relaxed">
+                Once a disaster report is approved by an administrator, donors can request campaign promotion for this
+                case. Donors then choose a verified NGO to review and confirm the campaign before funds are collected.
               </p>
             </div>
-            <div className="text-sm font-bold text-primary cursor-pointer hover:underline">
-              View All 18 Operations
+
+            <div className="rounded-3xl bg-surface-container-low p-8 shadow-ambient">
+              <h2 className="text-2xl font-bold mb-4">Related campaign flow</h2>
+              <ul className="space-y-3 text-on-surface-variant">
+                <li>1. Report disaster → admin approves.</li>
+                <li>2. Donor selects an NGO for campaign promotion.</li>
+                <li>3. NGO confirms the proposal.</li>
+                <li>4. Administrator publishes the campaign live.</li>
+              </ul>
             </div>
           </div>
 
-          {/* You can paste the 3 campaign cards from your Stitch HTML here if needed */}
+          <div className="rounded-3xl bg-surface-container-low p-8 shadow-ambient space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Case submitted by</h3>
+              <p className="text-sm text-on-surface-variant">{disaster.submitted_by_name || 'Community or donor volunteer'}</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Reported</h3>
+              <p className="text-sm text-on-surface-variant">{new Date(disaster.created_at).toLocaleDateString()}</p>
+            </div>
+            {disaster.video && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Video evidence</h3>
+                <a
+                  href={disaster.video}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary font-semibold hover:underline"
+                >
+                  View submitted video
+                </a>
+              </div>
+            )}
+          </div>
         </section>
       </main>
 

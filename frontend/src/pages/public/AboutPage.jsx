@@ -149,7 +149,7 @@ const AboutPage = () => {
             </p>
             <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
               <span className="text-2xl font-black italic tracking-tighter">REDSHIELD</span>
-              <span className="text-2xl font-bold font-serif">AQUASAVE</span>
+              <span className="text-2xl font-bold">AQUASAVE</span>
               <span className="text-2xl font-light tracking-[0.3em]">GLOBAL_AID</span>
               <span className="text-3xl font-black">UN_CORE</span>
               <span className="text-2xl font-medium uppercase border-2 border-on-surface px-2">ReliefWay</span>

@@ -129,150 +129,124 @@ const NGOAnalytics = () => {
   return (
     <NGOLayout>
       <div className="p-6 lg:p-8">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <BarChart3 className="w-8 h-8 text-purple" />
-            <h1 className="text-4xl font-bold text-slate-900 font-playfair tracking-tight">Analytics</h1>
-          </div>
-          <p className="text-slate-600 font-dmsans tracking-tight">Real-time insights into your fundraising performance</p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <DollarSign className="w-6 h-6 text-purple" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
-              ${stats.totalRaised.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Total Raised</div>
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Campaign Analytics</h1>
+            <p className="text-slate-600 tracking-tight">Detailed insights into your fundraising performance</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <Activity className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
-              {stats.totalCampaigns}
-            </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Total Campaigns</div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-green-50 rounded-lg">
-                <Users className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
-              {stats.totalDonations}
-            </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Total Donations</div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-emerald-50 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-emerald-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
-              ${stats.averageDonation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Average Donation</div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-yellow-50 rounded-lg">
-                <Activity className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
-              {stats.liveCampaigns}
-            </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Live Campaigns</div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <CheckCircle2 className="w-6 h-6 text-gray-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-slate-900 mb-1 font-playfair tracking-tight">
-              {stats.completedCampaigns}
-            </div>
-            <div className="text-sm text-slate-600 font-dmsans tracking-tight">Completed</div>
-          </div>
-        </div>
-
-        {/* Donations Over Time Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6 mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 font-playfair tracking-tight">Donations Over Time (Last 7 Days)</h2>
-          {donationsOverTime.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 font-dmsans tracking-tight">
-              No donation data available
-            </div>
-          ) : (
-            <div className="flex items-end gap-4 h-64">
-              {donationsOverTime.map((item, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  <div className="w-full flex flex-col items-center justify-end" style={{ height: '200px' }}>
-                    <div
-                      className="w-full bg-gradient-to-t from-purple to-light-purple rounded-t-lg transition-all duration-500 hover:opacity-80"
-                      style={{ height: `${(item.amount / maxDonation) * 100}%` }}
-                      title={`$${item.amount.toLocaleString()}`}
-                    ></div>
-                  </div>
-                  <div className="mt-2 text-xs text-slate-600 font-dmsans tracking-tight text-center">
-                    {item.date}
-                  </div>
-                  <div className="text-xs font-bold text-purple font-dmsans tracking-tight mt-1">
-                    ${item.amount.toLocaleString()}
-                  </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-primary-fixed/70 rounded-xl">
+                  <DollarSign className="w-6 h-6 text-primary" />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Campaign Performance */}
-        <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 font-playfair tracking-tight">Campaign Performance</h2>
-          {campaignPerformance.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 font-dmsans tracking-tight">
-              No campaign data available
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {campaignPerformance.map((campaign) => (
-                <div key={campaign.id} className="border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-slate-900 font-dmsans tracking-tight">{campaign.title}</h3>
-                    <span className="text-sm font-bold text-purple font-dmsans tracking-tight">
-                      ${campaign.raised.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
-                    <div
-                      className="bg-gradient-to-r from-purple to-light-purple h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(campaign.progress, 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-600 font-dmsans tracking-tight">
-                    <span>{Math.round(campaign.progress)}% of ${campaign.target.toLocaleString()}</span>
-                    <span>{campaign.donations} donations</span>
-                  </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Total Raised</p>
+                  <p className="text-3xl font-bold text-slate-900 tracking-tight">
+                    ${stats.totalRaised.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
                 </div>
-              ))}
+              </div>
             </div>
-          )}
+
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-blue-50 rounded-xl">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Total Donations</p>
+                  <p className="text-3xl font-bold text-slate-900 tracking-tight">{stats.totalDonations}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-emerald-50 rounded-xl">
+                  <TrendingUp className="w-6 h-6 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Avg. Donation</p>
+                  <p className="text-3xl font-bold text-slate-900 tracking-tight">
+                    ${stats.averageDonation.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Recent Donations Chart Placeholder */}
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
+              <h3 className="text-xl font-bold text-slate-900 mb-6 tracking-tight flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" />
+                Fundraising Activity
+              </h3>
+              <div className="space-y-4">
+                {donationsOverTime.length === 0 ? (
+                  <div className="h-64 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <p className="text-slate-400 font-bold tracking-tight">No recent activity data</p>
+                  </div>
+                ) : (
+                  donationsOverTime.map((data, i) => (
+                    <div key={i} className="space-y-1">
+                      <div className="flex justify-between text-sm font-bold tracking-tight">
+                        <span className="text-slate-600">{data.date}</span>
+                        <span className="text-primary">${data.amount.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{ width: `${(data.amount / Math.max(...donationsOverTime.map(d => d.amount))) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Campaign Performance */}
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 p-6">
+              <h3 className="text-xl font-bold text-slate-900 mb-6 tracking-tight flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                Campaign Performance
+              </h3>
+              <div className="space-y-6">
+                {campaignPerformance.length === 0 ? (
+                  <div className="h-64 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <p className="text-slate-400 font-bold tracking-tight">No campaign data available</p>
+                  </div>
+                ) : (
+                  campaignPerformance.slice(0, 5).map((campaign) => (
+                    <div key={campaign.id} className="space-y-2">
+                      <div className="flex justify-between items-end">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-900 truncate tracking-tight">{campaign.title}</p>
+                          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                            ${campaign.raised.toLocaleString()} of ${campaign.target.toLocaleString()}
+                          </p>
+                        </div>
+                        <span className="text-sm font-black text-primary tracking-tight">
+                          {Math.round(campaign.progress)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-primary to-[#001a38] h-3 rounded-full transition-all"
+                          style={{ width: `${Math.min(campaign.progress, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </NGOLayout>
