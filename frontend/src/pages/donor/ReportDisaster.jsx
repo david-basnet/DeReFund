@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { disasterAPI, uploadAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import DonorLayout from '../../components/DonorLayout';
+import ConfirmModal from '../../components/ConfirmModal';
 import { 
   AlertTriangle, 
   MapPin, 
@@ -33,6 +34,7 @@ const ReportDisaster = () => {
   const [loading, setLoading] = useState(false);
   const [disasters, setDisasters] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, caseId: null, campaignId: null });
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
@@ -120,13 +122,18 @@ const ReportDisaster = () => {
     }
   };
 
-  const handleDelete = async (caseId, campaignId) => {
+  const handleDelete = (caseId, campaignId) => {
     if (campaignId) {
       toast.error('Cannot delete disaster already linked to a campaign');
       return;
     }
 
-    if (!window.confirm('Are you sure you want to delete this disaster case?')) return;
+    setConfirmDelete({ isOpen: true, caseId, campaignId });
+  };
+
+  const confirmDeleteDisaster = async () => {
+    const { caseId } = confirmDelete;
+    if (!caseId) return;
 
     try {
       setLoading(true);
@@ -138,6 +145,7 @@ const ReportDisaster = () => {
       toast.error(err.message || 'Failed to delete disaster case');
     } finally {
       setLoading(false);
+      setConfirmDelete({ isOpen: false, caseId: null, campaignId: null });
     }
   };
 
@@ -651,6 +659,16 @@ const ReportDisaster = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, caseId: null, campaignId: null })}
+        onConfirm={confirmDeleteDisaster}
+        title="Delete Disaster Case"
+        message="Are you sure you want to delete this disaster case? This action cannot be undone."
+        isLoading={loading}
+        confirmText="Delete"
+      />
     </DonorLayout>
   );
 };

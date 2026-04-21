@@ -3,15 +3,43 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { authAPI } from '../utils/api';
 import './AuthForm.css';
 
+const roleHome = (role) => {
+  const normalized = String(role || '').toUpperCase();
+  if (normalized === 'ADMIN') return '/admin';
+  if (normalized === 'NGO') return '/ngo';
+  if (normalized === 'DONOR') return '/donor';
+  return '/';
+};
+
+const canRoleOpenPath = (role, path) => {
+  const normalized = String(role || '').toUpperCase();
+  if (!path || path === '/') return false;
+  if (path.startsWith('/admin')) return normalized === 'ADMIN';
+  if (path.startsWith('/ngo')) return normalized === 'NGO';
+  if (path.startsWith('/donor') || path.startsWith('/volunteer')) return normalized === 'DONOR';
+  return true;
+};
+
 const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
-  const { login, register } = useAuth();
+  const { login, register, verifyRegistration } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(initialMode === 'signup');
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordStep, setForgotPasswordStep] = useState('email');
+  const [resetCode, setResetCode] = useState('');
+  const [resetPasswordData, setResetPasswordData] = useState({
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [isAwaitingRegistrationCode, setIsAwaitingRegistrationCode] = useState(false);
+  const [registrationCode, setRegistrationCode] = useState('');
+  const [pendingRegistrationEmail, setPendingRegistrationEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -59,6 +87,12 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
         });
       }
       setForgotPasswordEmail('');
+      setForgotPasswordStep('email');
+      setResetCode('');
+      setResetPasswordData({ newPassword: '', confirmPassword: '' });
+      setIsAwaitingRegistrationCode(false);
+      setRegistrationCode('');
+      setPendingRegistrationEmail('');
 
       if (isForgotPassword) return;
 
@@ -394,6 +428,9 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
 
   const handleSignUpClick = () => {
     setIsSignUp(true);
+    setIsAwaitingRegistrationCode(false);
+    setRegistrationCode('');
+    setError('');
     setRegisterData({
       username: '',
       email: '',
@@ -407,6 +444,9 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
 
   const handleSignInClick = () => {
     setIsSignUp(false);
+    setIsAwaitingRegistrationCode(false);
+    setRegistrationCode('');
+    setError('');
   };
 
   const handleLoginChange = (e) => {
@@ -437,23 +477,16 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
       onClose();
       
       // Check if there's a specific page to return to
-      const from = location.state?.from?.pathname;
-      if (from && from !== '/') {
+      const from = location.state?.from?.pathname || sessionStorage.getItem('authRedirectPath');
+      const userRole = response?.data?.user?.role;
+      if (from && canRoleOpenPath(userRole, from)) {
+        sessionStorage.removeItem('authRedirectPath');
         navigate(from);
         return;
       }
       
-      // Get user role from response - backend returns user in response.data.user
-      const userRole = response?.data?.user?.role;
-      
-      // Redirect based on role
-      if (userRole === 'ADMIN') {
-        navigate('/admin');
-      } else if (userRole === 'NGO') {
-        navigate('/ngo');
-      } else {
-        navigate('/');
-      }
+      sessionStorage.removeItem('authRedirectPath');
+      navigate(roleHome(userRole));
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -509,23 +542,9 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
         password: registerData.password,
         role: registerData.role,
       });
-      onClose();
-
-      // Check if there's a specific page to return to
-      const from = location.state?.from?.pathname;
-      if (from && from !== '/') {
-        navigate(from);
-        return;
-      }
-
-      // Redirect based on role
-      if (registerData.role === 'ADMIN') {
-        navigate('/admin');
-      } else if (registerData.role === 'NGO') {
-        navigate('/ngo');
-      } else {
-        navigate('/');
-      }
+      setPendingRegistrationEmail(registerData.email.trim());
+      setIsAwaitingRegistrationCode(true);
+      toast.success('Verification code sent to your email.');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -533,16 +552,114 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
     }
   };
 
-  const handleForgotPasswordSubmit = (e) => {
+  const handleRegistrationCodeSubmit = async (e) => {
     e.preventDefault();
-    console.log('Forgot Password Email:', forgotPasswordEmail);
-    // TODO: Implement forgot password logic
-    alert('Password reset code has been sent to your email!');
+    setError('');
+
+    if (!/^\d{6}$/.test(registrationCode.trim())) {
+      setError('Enter the 6 digit verification code');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await verifyRegistration({
+        email: pendingRegistrationEmail,
+        code: registrationCode.trim(),
+      });
+
+      onClose();
+
+      // Check if there's a specific page to return to
+      const from = location.state?.from?.pathname || sessionStorage.getItem('authRedirectPath');
+      const userRole = response?.data?.user?.role || registerData.role;
+      if (from && canRoleOpenPath(userRole, from)) {
+        sessionStorage.removeItem('authRedirectPath');
+        navigate(from);
+        return;
+      }
+
+      sessionStorage.removeItem('authRedirectPath');
+      navigate(roleHome(userRole));
+    } catch (err) {
+      setError(err.message || 'Verification failed. Please check the code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (forgotPasswordStep === 'email') {
+      if (!forgotPasswordEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotPasswordEmail)) {
+        setError('Please provide a valid email address');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await authAPI.requestPasswordReset({ email: forgotPasswordEmail.trim() });
+        setForgotPasswordStep('reset');
+        toast.success('Password reset code sent to your email.');
+      } catch (err) {
+        setError(err.message || 'Could not send reset code.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (!/^\d{6}$/.test(resetCode.trim())) {
+      setError('Enter the 6 digit reset code');
+      return;
+    }
+
+    if (resetPasswordData.newPassword.length < 8) {
+      setError('New password must be at least 8 characters long');
+      return;
+    }
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(resetPasswordData.newPassword)) {
+      setError('New password must contain at least one uppercase letter, one lowercase letter, and one number');
+      return;
+    }
+
+    if (resetPasswordData.newPassword !== resetPasswordData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await authAPI.resetPassword({
+        email: forgotPasswordEmail.trim(),
+        code: resetCode.trim(),
+        newPassword: resetPasswordData.newPassword,
+      });
+      toast.success('Password reset successful. Please sign in.');
+      setIsForgotPassword(false);
+      setForgotPasswordStep('email');
+      setResetCode('');
+      setResetPasswordData({ newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      setError(err.message || 'Could not reset password.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handles forgot password animation: form slides to center, title flips, content transforms
   const handleForgotPasswordClick = (e) => {
     e.preventDefault();
+    setError('');
+    setIsForgotPassword(true);
+    setForgotPasswordStep('email');
+    setForgotPasswordEmail(loginData.email || '');
+    setResetCode('');
+    setResetPasswordData({ newPassword: '', confirmPassword: '' });
+    return;
     if (!authContainerRef.current) return;
 
     const currentFormRef = isSignUp ? signUpFormRef.current : signInFormRef.current;
@@ -718,6 +835,12 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
   // Restores sign-in form after forgot password flow, removes dynamic elements and clears GSAP styles
   const handleBackToSignIn = (e) => {
     if (e) e.preventDefault();
+    setError('');
+    setIsForgotPassword(false);
+    setForgotPasswordStep('email');
+    setResetCode('');
+    setResetPasswordData({ newPassword: '', confirmPassword: '' });
+    return;
     if (!authContainerRef.current || !signInFormRef.current) return;
 
     const signInForm = signInFormRef.current.querySelector('form');
@@ -888,7 +1011,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
 
   return (
     <div className="auth-form-overlay" ref={overlayRef} onClick={onClose}>
-      <div className={`auth-container ${isForgotPassword ? 'forgot-password-active' : ''}`} id="auth-container" ref={(el) => {
+      <div className={`auth-container ${isSignUp ? 'right-panel-active' : ''} ${isForgotPassword ? 'forgot-password-active' : ''}`} id="auth-container" ref={(el) => {
         containerRef.current = el;
         authContainerRef.current = el;
       }} onClick={(e) => e.stopPropagation()}>
@@ -906,8 +1029,40 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
 
         {/* Sign Up Form Container */}
         <div className="form-container sign-up-container" ref={signUpFormRef}>
-          <form onSubmit={handleRegisterSubmit}>
-            <h1>Create Account</h1>
+          <form onSubmit={isAwaitingRegistrationCode ? handleRegistrationCodeSubmit : handleRegisterSubmit}>
+            <h1>{isAwaitingRegistrationCode ? 'Verify Email' : 'Create Account'}</h1>
+            {isAwaitingRegistrationCode ? (
+              <>
+                <p className="forgot-password-description">
+                  We sent a 6 digit code to {pendingRegistrationEmail}. Enter it to create your account.
+                </p>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="6"
+                  placeholder="Verification code"
+                  value={registrationCode}
+                  onChange={(e) => setRegistrationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                />
+                {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
+                <button type="submit" disabled={loading}>
+                  {loading ? 'Verifying...' : 'Verify & Create Account'}
+                </button>
+                <button
+                  type="button"
+                  className="auth-secondary-button"
+                  onClick={() => {
+                    setIsAwaitingRegistrationCode(false);
+                    setRegistrationCode('');
+                    setError('');
+                  }}
+                >
+                  Edit Details
+                </button>
+              </>
+            ) : (
+              <>
             
             {/* Role Selection */}
             <div className="role-selection">
@@ -1070,6 +1225,8 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
             <button type="submit" disabled={loading}>
               {loading ? 'Signing Up...' : 'Sign Up'}
             </button>
+              </>
+            )}
           </form>
         </div>
 
@@ -1111,18 +1268,55 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
         {/* Forgot Password Form Container */}
         <div className="form-container forgot-password-container" ref={forgotPasswordFormRef}>
           <form onSubmit={handleForgotPasswordSubmit}>
-            <h1>Forgot Password</h1>
+            <h1>{forgotPasswordStep === 'email' ? 'Forgot Password' : 'Reset Password'}</h1>
             <p className="forgot-password-description">
-              Enter your email address and we'll send you a code to reset your password.
+              {forgotPasswordStep === 'email'
+                ? "Enter your email address and we'll send you a code to reset your password."
+                : `Enter the code sent to ${forgotPasswordEmail}, then choose your new password.`}
             </p>
-            <input 
-              type="email" 
-              placeholder="Email" 
-              value={forgotPasswordEmail}
-              onChange={(e) => setForgotPasswordEmail(e.target.value)}
-              required
-            />
-            <button type="submit">Send Reset Code</button>
+            {forgotPasswordStep === 'email' ? (
+              <input 
+                type="email" 
+                placeholder="Email" 
+                value={forgotPasswordEmail}
+                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                required
+              />
+            ) : (
+              <>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="6"
+                  placeholder="Reset code"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="New password"
+                  value={resetPasswordData.newPassword}
+                  onChange={(e) => setResetPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={resetPasswordData.confirmPassword}
+                  onChange={(e) => setResetPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  required
+                />
+              </>
+            )}
+            {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
+            <button type="submit" disabled={loading}>
+              {loading
+                ? 'Please wait...'
+                : forgotPasswordStep === 'email'
+                  ? 'Send Reset Code'
+                  : 'Confirm New Password'}
+            </button>
             <a 
               href="#" 
               className="back-to-signin" 
@@ -1177,4 +1371,3 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
 };
 
 export default AuthForm;
-

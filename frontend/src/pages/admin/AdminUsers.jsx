@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { adminAPI } from '../../utils/api';
 import AdminLayout from '../../components/AdminLayout';
+import ConfirmModal from '../../components/ConfirmModal';
+import { toast } from 'react-hot-toast';
 import { Users, ShieldCheck, ShieldX, Search, Filter, Mail, Calendar, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,6 +16,7 @@ const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [verifyingUserId, setVerifyingUserId] = useState(null);
   const [deletingUserId, setDeletingUserId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, userId: null, userName: '' });
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
@@ -49,30 +52,35 @@ const AdminUsers = () => {
     try {
       setVerifyingUserId(userId);
       await adminAPI.verifyUser(userId, { status });
+      toast.success(`User status updated to ${status}`);
       await fetchUsers();
     } catch (error) {
       console.error('Error verifying user:', error);
-      alert(error.message || 'Failed to verify user');
+      toast.error(error.message || 'Failed to verify user');
     } finally {
       setVerifyingUserId(null);
     }
   };
 
-  const handleDelete = async (userId, userName) => {
-    if (!window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDelete = (userId, userName) => {
+    setConfirmDelete({ isOpen: true, userId, userName });
+  };
+
+  const confirmDeleteUser = async () => {
+    const { userId } = confirmDelete;
+    if (!userId) return;
 
     try {
       setDeletingUserId(userId);
       await adminAPI.deleteUser(userId);
+      toast.success('User deleted successfully');
       await fetchUsers();
-      alert('User deleted successfully');
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert(error.message || 'Failed to delete user');
+      toast.error(error.message || 'Failed to delete user');
     } finally {
       setDeletingUserId(null);
+      setConfirmDelete({ isOpen: false, userId: null, userName: '' });
     }
   };
 
@@ -293,6 +301,16 @@ const AdminUsers = () => {
           </>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, userId: null, userName: '' })}
+        onConfirm={confirmDeleteUser}
+        title="Delete User"
+        message={`Are you sure you want to delete user "${confirmDelete.userName}"? This action cannot be undone.`}
+        isLoading={deletingUserId !== null}
+        confirmText="Delete"
+      />
     </AdminLayout>
   );
 };

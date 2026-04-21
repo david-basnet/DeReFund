@@ -4,6 +4,7 @@ import { volunteerVerificationAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import DonorLayout from '../../components/DonorLayout';
 import AdminLayout from '../../components/AdminLayout';
+import { toast } from 'react-hot-toast';
 import { ShieldCheck, Users, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 
 const VolunteerVoting = () => {
@@ -33,10 +34,11 @@ const VolunteerVoting = () => {
     try {
       setVerifyingId(campaignId);
       await volunteerVerificationAPI.verifyCampaign(campaignId);
+      toast.success('Vote recorded successfully');
       await fetchCampaigns(); // Refresh the list
     } catch (error) {
       console.error('Error verifying campaign:', error);
-      alert(error.message || 'Failed to verify campaign');
+      toast.error(error.message || 'Failed to verify campaign');
     } finally {
       setVerifyingId(null);
     }

@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -60,6 +61,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminDisasters from './pages/admin/AdminDisasters';
 import AdminLogs from './pages/admin/AdminLogs';
 import AdminCampaigns from './pages/admin/AdminCampaigns';
+import AdminProfile from './pages/admin/AdminProfile';
 import AuthForm from './components/AuthForm';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -67,8 +69,25 @@ const AppContent = () => {
   const {
     isAuthFormOpen,
     authFormMode,
+    openLoginModal,
+    openRegisterModal,
     closeModals,
   } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.state?.authRequired && !isAuthFormOpen) {
+      const redirectPath = location.state.from?.pathname || '/';
+      sessionStorage.setItem('authRedirectPath', redirectPath);
+      if (location.state.authMode === 'signup') {
+        openRegisterModal();
+      } else {
+        openLoginModal();
+      }
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, isAuthFormOpen, openLoginModal, openRegisterModal, navigate]);
 
   return (
     <>
@@ -84,7 +103,7 @@ const AppContent = () => {
         
         {/* Donor Routes */}
         <Route path="/volunteer/voting" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="DONOR">
             <VolunteerVoting />
           </ProtectedRoute>
         } />
@@ -221,6 +240,11 @@ const AppContent = () => {
         <Route path="/admin/campaigns" element={
           <ProtectedRoute requiredRole="ADMIN">
             <AdminCampaigns />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/profile" element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminProfile />
           </ProtectedRoute>
         } />
       </Routes>

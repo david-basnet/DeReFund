@@ -19,6 +19,7 @@ const EditCampaign = () => {
     target_amount: '',
     case_id: '',
     verification_threshold: 20,
+    contract_address: '',
   });
 
   useEffect(() => {
@@ -43,6 +44,7 @@ const EditCampaign = () => {
           target_amount: campaign.target_amount || '',
           case_id: campaign.case_id || '',
           verification_threshold: campaign.verification_threshold || 20,
+          contract_address: campaign.contract_address || '',
         });
         
         const disastersData = disastersResponse.data?.disasters || disastersResponse.data || [];
@@ -78,6 +80,7 @@ const EditCampaign = () => {
         description: formData.description,
         target_amount: parseFloat(formData.target_amount),
         verification_threshold: parseInt(formData.verification_threshold),
+        contract_address: formData.contract_address.trim() || null,
         ...(formData.case_id && { case_id: formData.case_id }),
       };
 
@@ -218,6 +221,24 @@ const EditCampaign = () => {
                     required
                   />
                   <p className="text-xs text-slate-500 font-medium">Votes required for verification (min 5, max 50)</p>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 uppercase tracking-widest">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    Escrow Contract Address
+                  </label>
+                  <input
+                    type="text"
+                    name="contract_address"
+                    value={formData.contract_address}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-slate-50 text-black font-bold tracking-tight transition-all"
+                    placeholder="0x..."
+                  />
+                  <p className="text-xs text-slate-500 font-medium">
+                    Donations go into this contract when it is set.
+                  </p>
                 </div>
               </div>
 

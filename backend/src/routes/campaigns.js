@@ -17,6 +17,7 @@ const {
   getById,
   getAll,
   update,
+  remove,
 } = require('../controllers/campaignController');
 
 // Public — no auth (specific paths before :campaignId)
@@ -33,5 +34,6 @@ router.post('/', isNGO, validateCampaign, create);
 router.patch('/:campaignId/ngo-confirm', isNGO, validateNgoCampaignDecision, ngoConfirm);
 router.get('/:campaignId', getById);
 router.patch('/:campaignId', update);
+router.delete('/:campaignId', remove);
 
 module.exports = router;

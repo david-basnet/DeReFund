@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { volunteerVerificationAPI } from '../../utils/api';
-import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
-import { ShieldCheck, Users, CheckCircle, Loader2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { ShieldCheck, Loader2, Users } from 'lucide-react';
+import { assets } from '../../assets/assets';
 
 const VolunteerVoting = () => {
-  const { user } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState(null);
@@ -34,16 +34,43 @@ const VolunteerVoting = () => {
       setSubmittingId(campaignId);
       await volunteerVerificationAPI.verifyCampaign(campaignId);
       setSubmittedVotes((prev) => [...new Set([...prev, campaignId])]);
+      toast.success('Vote submitted successfully');
       await fetchCampaigns();
     } catch (error) {
       console.error('Error submitting vote:', error);
-      alert(error.message || 'Unable to submit vote at this time.');
+      toast.error(error.message || 'Unable to submit vote at this time.');
     } finally {
       setSubmittingId(null);
     }
   };
 
-  const hasSubmittedVote = (campaignId) => submittedVotes.includes(campaignId);
+  const handleUnvote = async (campaignId) => {
+    try {
+      setSubmittingId(campaignId);
+      await volunteerVerificationAPI.unverifyCampaign(campaignId);
+      setSubmittedVotes((prev) => prev.filter((id) => id !== campaignId));
+      toast.success('Vote removed successfully');
+      await fetchCampaigns();
+    } catch (error) {
+      console.error('Error removing vote:', error);
+      toast.error(error.message || 'Unable to remove vote at this time.');
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const hasSubmittedVote = (campaign) =>
+    Boolean(campaign.has_verified) || submittedVotes.includes(campaign.campaign_id);
+
+  const formatVoteTime = (value) => {
+    if (!value) return 'Recently';
+    return new Date(value).toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   return (
     <Layout>
@@ -65,13 +92,13 @@ const VolunteerVoting = () => {
               <div className="flex gap-3 flex-wrap">
                 <Link
                   to="/"
-                  className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50"
+                  className="inline-flex h-12 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50"
                 >
                   Back to Home
                 </Link>
                 <Link
                   to="/donor/voting"
-                  className="inline-flex h-12 items-center justify-center rounded-2xl bg-primary text-white px-5 text-sm font-semibold shadow-sm transition hover:bg-primary-dark"
+                  className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-900 text-white px-5 text-sm font-bold shadow-sm transition hover:bg-slate-800"
                 >
                   Dashboard Voting
                 </Link>
@@ -83,7 +110,7 @@ const VolunteerVoting = () => {
             {loading ? (
               <div className="col-span-full rounded-3xl border border-gray-200 bg-white p-10 text-center shadow-sm">
                 <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
-                <p className="text-sm font-medium text-slate-700">Loading campaigns available for voting…</p>
+                <p className="text-sm font-medium text-slate-700">Loading campaigns available for voting...</p>
               </div>
             ) : campaigns.length === 0 ? (
               <div className="col-span-full rounded-3xl border border-gray-200 bg-white p-10 text-center shadow-sm">
@@ -98,8 +125,10 @@ const VolunteerVoting = () => {
                 const verificationCount = campaign.verification_count || 0;
                 const threshold = campaign.verification_threshold || 20;
                 const progress = Math.min((verificationCount / threshold) * 100, 100);
-                const alreadyVoted = hasSubmittedVote(campaign.campaign_id);
+                const alreadyVoted = hasSubmittedVote(campaign);
                 const isVerified = verificationCount >= threshold;
+                const busy = submittingId === campaign.campaign_id;
+                const voters = campaign.volunteer_voters || [];
 
                 return (
                   <div
@@ -119,57 +148,108 @@ const VolunteerVoting = () => {
                     </div>
                     <div className="p-6">
                       <div className="flex items-start justify-between gap-3 mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-black tracking-tight">
-                          {campaign.title}
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-600 line-clamp-3">
-                          {campaign.description}
-                        </p>
+                        <div>
+                          <h3 className="text-xl font-semibold text-black tracking-tight">
+                            {campaign.title}
+                          </h3>
+                          <p className="mt-2 text-sm text-slate-600 line-clamp-3">
+                            {campaign.description}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                          {isVerified ? 'Verified' : alreadyVoted ? 'Voted' : 'Pending'}
+                        </span>
                       </div>
-                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                        {isVerified ? 'Verified' : 'Pending'}
-                      </span>
-                    </div>
 
-                    <div className="mb-5 rounded-2xl bg-slate-100 p-4">
-                      <div className="flex items-center justify-between text-sm font-medium text-slate-700 mb-2">
-                        <span>{verificationCount} of {threshold} votes</span>
-                        <span>{Math.round(progress)}%</span>
+                      <div className="mb-5 rounded-2xl bg-slate-100 p-4">
+                        <div className="flex items-center justify-between text-sm font-medium text-slate-700 mb-2">
+                          <span>{verificationCount} of {threshold} votes</span>
+                          <span>{Math.round(progress)}%</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-300">
+                          <div
+                            className="h-2 rounded-full bg-gradient-to-r from-primary to-[#001a38] transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-300">
-                        <div
-                          className="h-2 rounded-full bg-gradient-to-r from-primary to-[#001a38] transition-all"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
 
-                    <div className="flex flex-col gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleVote(campaign.campaign_id)}
-                        disabled={submittingId === campaign.campaign_id || alreadyVoted || isVerified}
-                        className="inline-flex h-12 items-center justify-center rounded-2xl bg-primary text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
-                      >
-                        {submittingId === campaign.campaign_id
-                          ? 'Submitting Vote…'
-                          : alreadyVoted
-                          ? 'Vote Submitted'
-                          : isVerified
-                          ? 'Already Verified'
-                          : 'Vote to Verify'}
-                      </button>
-                      <Link
-                        to={`/campaigns/${campaign.campaign_id}`}
-                        className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-                      >
-                        View Campaign Details
-                      </Link>
+                      <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                            <Users className="h-4 w-4 text-primary" />
+                            <span>Volunteers who voted</span>
+                          </div>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                            {voters.length}
+                          </span>
+                        </div>
+
+                        {voters.length === 0 ? (
+                          <p className="text-sm text-slate-500">No volunteer votes yet.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {voters.slice(0, 5).map((voter) => (
+                              <div
+                                key={voter.verification_id}
+                                className="flex items-start gap-3 rounded-lg bg-slate-50 p-3"
+                              >
+                                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                                  {(voter.volunteer_name || 'V').charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-bold text-slate-900">
+                                    {voter.volunteer_name || 'Volunteer'}
+                                  </p>
+                                  <p className="truncate text-xs text-slate-600">
+                                    {voter.volunteer_email || 'No email'}
+                                  </p>
+                                  <p className="mt-1 text-xs font-medium text-slate-500">
+                                    Voted {formatVoteTime(voter.verified_at)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                            {voters.length > 5 && (
+                              <p className="text-xs font-semibold text-slate-500">
+                                +{voters.length - 5} more volunteer votes
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-3">
+                        <button
+                          type="button"
+                          onClick={() => alreadyVoted ? handleUnvote(campaign.campaign_id) : handleVote(campaign.campaign_id)}
+                          disabled={busy || isVerified}
+                          className={`inline-flex h-12 items-center justify-center rounded-lg px-5 text-sm font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                            alreadyVoted || isVerified
+                              ? 'border border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              : 'bg-slate-900 text-white hover:bg-slate-800'
+                          }`}
+                        >
+                          {busy
+                            ? alreadyVoted
+                              ? 'Removing Vote...'
+                              : 'Submitting Vote...'
+                            : alreadyVoted
+                            ? 'Voted - Click to Unvote'
+                            : isVerified
+                            ? 'Already Verified'
+                            : 'Vote to Verify'}
+                        </button>
+                        <Link
+                          to={`/campaigns/${campaign.campaign_id}`}
+                          className="inline-flex h-12 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-900 transition hover:bg-slate-50"
+                        >
+                          View Campaign Details
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
+                );
               })
             )}
           </div>

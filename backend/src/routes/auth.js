@@ -1,14 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const { validateRegister, validateLogin } = require('../utils/validators');
+const {
+  validateRegister,
+  validateLogin,
+  validateRegistrationCode,
+  validateForgotPassword,
+  validateResetPassword,
+} = require('../utils/validators');
 const { authenticate } = require('../middleware/auth');
-const { register, login, getProfile, getVerificationStatus, updateProfile, changePassword, deleteAccount } = require('../controllers/authController');
+const {
+  register,
+  verifyRegistrationCode,
+  login,
+  requestPasswordResetCode,
+  resetPasswordWithCode,
+  getProfile,
+  getVerificationStatus,
+  updateProfile,
+  changePassword,
+  deleteAccount,
+} = require('../controllers/authController');
 
 // Register route
 router.post('/register', validateRegister, register);
 
+// Verify email code and create account
+router.post('/register/verify', validateRegistrationCode, verifyRegistrationCode);
+
 // Login route
 router.post('/login', validateLogin, login);
+
+// Password reset code flow
+router.post('/password/forgot', validateForgotPassword, requestPasswordResetCode);
+router.post('/password/reset', validateResetPassword, resetPasswordWithCode);
 
 // Get current user profile
 router.get('/me', authenticate, getProfile);

@@ -423,6 +423,7 @@ const CreateCampaign = () => {
                   />
                   <p className="text-xs text-slate-500 font-medium tracking-tight">Required volunteer votes (min 5, max 50)</p>
                 </div>
+
               </div>
 
               {/* Images Section */}

@@ -149,8 +149,8 @@ const DonorProfile = () => {
       <div className="p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-lg shadow-md border border-slate-100 p-6 mb-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-black mb-2 tracking-tight">Profile Settings</h1>
                 <p className="text-gray-700 tracking-tight">Manage your account information and preferences</p>
@@ -158,16 +158,16 @@ const DonorProfile = () => {
               {!editing && (
                 <button
                   onClick={() => setEditing(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-primary to-[#001a38] text-white rounded-xl hover-lift shadow-lg transition-all duration-300 font-bold tracking-tight"
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
                 >
-                  EDIT PROFILE
+                  Edit Profile
                 </button>
               )}
             </div>
           </div>
 
           {/* Form */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-lg shadow-md border border-slate-100 p-6">
             {message.text && (
               <div className={`mb-4 p-4 rounded-lg ${
                 message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
@@ -187,7 +187,7 @@ const DonorProfile = () => {
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-black"
+                      className="w-full rounded-lg border border-slate-300 px-4 py-3 text-black focus:border-transparent focus:ring-2 focus:ring-primary"
                       required
                     />
                   ) : (
@@ -204,7 +204,7 @@ const DonorProfile = () => {
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-black"
+                      className="w-full rounded-lg border border-slate-300 px-4 py-3 text-black focus:border-transparent focus:ring-2 focus:ring-primary"
                       required
                     />
                   ) : (
@@ -224,13 +224,13 @@ const DonorProfile = () => {
                           value={formData.wallet_address}
                           onChange={(e) => handleInputChange('wallet_address', e.target.value)}
                           placeholder="0x..."
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-black"
+                          className="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-3 text-black focus:border-transparent focus:ring-2 focus:ring-primary"
                         />
                         {isConnected && address && address.toLowerCase() !== formData.wallet_address?.toLowerCase() && (
                           <button
                             type="button"
                             onClick={() => handleInputChange('wallet_address', address)}
-                            className="px-4 py-2 bg-primary/10 text-primary rounded-lg border border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-2 text-sm font-bold"
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition-all hover:bg-primary/20"
                             title="Use connected wallet address"
                           >
                             <Wallet className="w-4 h-4" />
@@ -243,7 +243,7 @@ const DonorProfile = () => {
                       )}
                     </div>
                   ) : (
-                    <p className="text-black font-mono text-sm tracking-tight bg-gray/10 p-2 rounded-lg border border-gray-200 inline-block">
+                    <p className="max-w-full break-all rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-sm text-black tracking-tight">
                       {formData.wallet_address || 'Not connected'}
                     </p>
                   )}
@@ -259,18 +259,18 @@ const DonorProfile = () => {
                 </div>
 
                 {editing && (
-                  <div className="flex space-x-4 pt-4">
+                  <div className="flex flex-col gap-3 pt-4 sm:flex-row">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-6 py-3 bg-gradient-to-r from-purple to-light-purple text-white rounded-xl hover-lift shadow-lg transition-all duration-300 disabled:opacity-50 font-bold tracking-tight"
+                      className="inline-flex min-h-11 items-center justify-center rounded-lg bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
                     >
                       {loading ? 'Saving...' : 'Save Changes'}
                     </button>
                     <button
                       type="button"
                       onClick={handleCancel}
-                      className="px-6 py-3 bg-gray text-black rounded-xl hover:bg-gray/80 transition-colors font-bold tracking-tight"
+                      className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50"
                     >
                       Cancel
                     </button>
@@ -281,29 +281,29 @@ const DonorProfile = () => {
           </div>
 
           {/* Settings */}
-          <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+          <div className="bg-white rounded-lg shadow-md border border-slate-100 p-6 mt-6">
             <h2 className="text-xl font-bold text-black mb-4 tracking-tight">Account Settings</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+              <div className="flex flex-col gap-3 py-3 border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-medium text-black tracking-tight">Change Password</h3>
                   <p className="text-sm text-gray-700 tracking-tight">Update your account password</p>
                 </div>
                 <button 
                   onClick={() => setShowPasswordModal(true)}
-                  className="px-4 py-2 text-primary hover:text-[#0a3d6b] font-bold tracking-tight"
+                  className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50"
                 >
                   Change
                 </button>
               </div>
-              <div className="flex items-center justify-between py-3">
+              <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-medium text-black tracking-tight">Delete Account</h3>
                   <p className="text-sm text-gray-700 tracking-tight">Permanently delete your account</p>
                 </div>
                 <button 
                   onClick={() => setShowDeleteModal(true)}
-                  className="px-4 py-2 text-red-600 hover:text-red-700 font-bold tracking-tight"
+                  className="inline-flex min-h-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 shadow-sm transition hover:bg-red-100"
                 >
                   Delete
                 </button>
@@ -316,7 +316,7 @@ const DonorProfile = () => {
       {/* Password Change Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
             <h2 className="text-2xl font-bold text-black mb-6 tracking-tight">Change Password</h2>
             {message.text && (
               <div className={`mb-4 p-4 rounded-lg ${
@@ -334,7 +334,7 @@ const DonorProfile = () => {
                       type={showCurrentPassword ? "text" : "password"}
                       value={passwordData.currentPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full rounded-lg border border-slate-300 px-4 py-3 pr-10 focus:border-transparent focus:ring-2 focus:ring-primary"
                       required
                     />
                     <button
@@ -353,7 +353,7 @@ const DonorProfile = () => {
                       type={showNewPassword ? "text" : "password"}
                       value={passwordData.newPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full rounded-lg border border-slate-300 px-4 py-3 pr-10 focus:border-transparent focus:ring-2 focus:ring-primary"
                       required
                       minLength={8}
                     />
@@ -373,7 +373,7 @@ const DonorProfile = () => {
                       type={showConfirmPassword ? "text" : "password"}
                       value={passwordData.confirmPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full rounded-lg border border-slate-300 px-4 py-3 pr-10 focus:border-transparent focus:ring-2 focus:ring-primary"
                       required
                       minLength={8}
                     />
@@ -386,11 +386,11 @@ const DonorProfile = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex gap-4 pt-4">
+                <div className="flex flex-col gap-3 pt-4 sm:flex-row">
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-purple to-light-purple text-white rounded-xl hover-lift shadow-lg transition-all duration-300 disabled:opacity-50 font-bold tracking-tight"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-lg bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
                   >
                     {loading ? 'Changing...' : 'Change Password'}
                   </button>
@@ -401,7 +401,7 @@ const DonorProfile = () => {
                       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
                       setMessage({ type: '', text: '' });
                     }}
-                    className="px-6 py-3 bg-gray text-black rounded-xl hover:bg-gray/80 transition-colors font-bold tracking-tight"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50"
                   >
                     Cancel
                   </button>
@@ -415,7 +415,7 @@ const DonorProfile = () => {
       {/* Delete Account Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
             <h2 className="text-2xl font-bold text-red-600 mb-4 tracking-tight">Delete Account</h2>
             <p className="text-gray-700 mb-6 tracking-tight">
               This action cannot be undone. All your data will be permanently deleted. Please enter your password to confirm.
@@ -436,7 +436,7 @@ const DonorProfile = () => {
                       type={showDeletePassword ? "text" : "password"}
                       value={deletePassword}
                       onChange={(e) => setDeletePassword(e.target.value)}
-                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full rounded-lg border border-slate-300 px-4 py-3 pr-10 focus:border-transparent focus:ring-2 focus:ring-red-500"
                       required
                     />
                     <button
@@ -448,11 +448,11 @@ const DonorProfile = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex gap-4 pt-4">
+                <div className="flex flex-col gap-3 pt-4 sm:flex-row">
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-300 disabled:opacity-50 font-bold tracking-tight"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-lg bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-200 disabled:text-red-800"
                   >
                     {loading ? 'Deleting...' : 'Delete Account'}
                   </button>
@@ -463,7 +463,7 @@ const DonorProfile = () => {
                       setDeletePassword('');
                       setMessage({ type: '', text: '' });
                     }}
-                    className="px-6 py-3 bg-gray text-black rounded-xl hover:bg-gray/80 transition-colors font-bold tracking-tight"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50"
                   >
                     Cancel
                   </button>

@@ -13,6 +13,8 @@ const {
   getCampaignsPendingApprovalRows,
   getDashboardStatsAggregated,
 } = require('../services/adminService');
+const { deployCampaignEscrow } = require('../services/escrowService');
+const { env } = require('../config/env');
 
 const verifyUser = async (req, res, next) => {
   try {
@@ -84,6 +86,9 @@ const approveCampaign = async (req, res, next) => {
     }
 
     let nextStatus;
+    const approvalUpdates = {};
+    let escrowDeployment = null;
+
     if (adminAction === 'REJECTED') {
       nextStatus = 'REJECTED';
     } else if (adminAction === 'LIVE') {
@@ -91,6 +96,24 @@ const approveCampaign = async (req, res, next) => {
       if (campaign.status !== 'VERIFIED_BY_VOLUNTEERS') {
         return res.status(400).json(formatResponse(false, `Campaign must reach its verification threshold (${campaign.verification_threshold || 20} volunteers) first`));
       }
+
+      if (!campaign.contract_address) {
+        const ngo = await getUserById(campaign.ngo_id);
+        if (!ngo?.wallet_address) {
+          return res.status(400).json(
+            formatResponse(false, 'The assigned NGO must set a wallet address before this campaign can go live')
+          );
+        }
+
+        const admin = await getUserById(req.user.userId);
+        escrowDeployment = await deployCampaignEscrow({
+          ngoWallet: ngo.wallet_address,
+          adminWallet: env.ESCROW_ADMIN_WALLET || admin?.wallet_address || null,
+          targetAmount: campaign.target_amount,
+        });
+        approvalUpdates.contract_address = escrowDeployment.contractAddress;
+      }
+
       nextStatus = 'LIVE';
     } else if (adminAction === 'APPROVE_PROPOSAL') {
       // Donor-proposed campaigns that need admin initial check
@@ -102,15 +125,26 @@ const approveCampaign = async (req, res, next) => {
       return res.status(400).json(formatResponse(false, 'Invalid approval action'));
     }
 
-    const result = await updateCampaignAdminApproval(campaignId, nextStatus, req.user.userId);
+    const result = await updateCampaignAdminApproval(campaignId, nextStatus, req.user.userId, approvalUpdates);
 
     await insertAdminLog(
       req.user.userId,
       'CAMPAIGN_APPROVAL',
-      JSON.stringify({ campaign_id: campaignId, previous_status: campaign.status, next_status: nextStatus })
+      JSON.stringify({
+        campaign_id: campaignId,
+        previous_status: campaign.status,
+        next_status: nextStatus,
+        escrow_contract_address: approvalUpdates.contract_address || campaign.contract_address || null,
+        escrow_deployment_tx_hash: escrowDeployment?.deploymentTxHash || null,
+      })
     );
 
-    res.json(formatResponse(true, `Campaign transitioned to ${nextStatus.toLowerCase()} successfully`, { campaign: result }));
+    res.json(
+      formatResponse(true, `Campaign transitioned to ${nextStatus.toLowerCase()} successfully`, {
+        campaign: result,
+        escrow: escrowDeployment,
+      })
+    );
   } catch (error) {
     next(error);
   }

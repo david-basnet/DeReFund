@@ -109,47 +109,47 @@ const DonorPage = () => {
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-primary to-[#001a38] rounded-2xl p-6 shadow-lg text-white">
+          <div className="rounded-xl bg-gradient-to-br from-slate-700 to-slate-950 p-6 shadow-lg text-white">
             <div className="flex items-center justify-between mb-4">
-              <DollarSign className="w-8 h-8 opacity-80" />
+              <DollarSign className="w-8 h-8 text-white/80" />
               <div className="text-right">
                 <p className="text-3xl font-bold tracking-tight">
                   ${stats.totalDonated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-sm opacity-90 tracking-tight">Total Donated</p>
+                <p className="text-sm font-semibold text-white/90 tracking-tight">Total Donated</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-primary to-primary-container rounded-2xl p-6 shadow-lg text-white">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <Heart className="w-8 h-8 opacity-80" />
+              <Heart className="w-8 h-8 text-rose-500" />
               <div className="text-right">
-                <p className="text-3xl font-bold tracking-tight">{stats.totalDonations}</p>
-                <p className="text-sm opacity-90 tracking-tight">My Donations</p>
+                <p className="text-3xl font-bold text-slate-950 tracking-tight">{stats.totalDonations}</p>
+                <p className="text-sm font-semibold text-slate-600 tracking-tight">My Donations</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-primary to-primary-container rounded-2xl p-6 shadow-lg text-white">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <TrendingUp className="w-8 h-8 opacity-80" />
+              <TrendingUp className="w-8 h-8 text-emerald-600" />
               <div className="text-right">
-                <p className="text-3xl font-bold tracking-tight">{stats.campaignsSupported}</p>
-                <p className="text-sm opacity-90 tracking-tight">Campaigns Supported</p>
+                <p className="text-3xl font-bold text-slate-950 tracking-tight">{stats.campaignsSupported}</p>
+                <p className="text-sm font-semibold text-slate-600 tracking-tight">Campaigns Supported</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-primary/90 via-emerald-600 to-emerald-800 rounded-2xl p-6 shadow-lg text-white">
+          <div className="rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-700 to-emerald-950 p-6 shadow-lg text-white">
             <div className="flex items-center justify-between mb-4">
-              <MapPin className="w-8 h-8 opacity-80" />
+              <MapPin className="w-8 h-8 text-white/80" />
               <div className="text-right">
                 <p className="text-3xl font-bold tracking-tight">{stats.reportedDisasters}</p>
-                <p className="text-sm opacity-90 tracking-tight">Disasters reported</p>
+                <p className="text-sm font-semibold text-white/90 tracking-tight">Disasters reported</p>
               </div>
             </div>
-            <div className="grid gap-2 text-xs text-white/80">
+            <div className="grid gap-2 text-xs font-semibold text-white/90">
               <div className="flex items-center justify-between">
                 <span>Approved</span>
                 <span>{stats.approvedDisasters}</span>

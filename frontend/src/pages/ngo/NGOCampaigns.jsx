@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { campaignAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import NGOLayout from '../../components/NGOLayout';
-import { Edit, Image as ImageIcon, Loader2, CheckCircle2, Clock, AlertCircle, FileText } from 'lucide-react';
+import ConfirmModal from '../../components/ConfirmModal';
+import { toast } from 'react-hot-toast';
+import { Edit, Image as ImageIcon, Loader2, CheckCircle2, Clock, AlertCircle, FileText, Trash2 } from 'lucide-react';
 import { assets } from '../../assets/assets';
 
 const NGOCampaigns = () => {
@@ -12,6 +14,7 @@ const NGOCampaigns = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
   const [acting, setActing] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, campaignId: null, campaignTitle: '' });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -47,12 +50,35 @@ const NGOCampaigns = () => {
     setActing(`${campaignId}-${approved}`);
     try {
       await campaignAPI.ngoConfirm(campaignId, approved);
+      toast.success(approved ? 'Campaign confirmed' : 'Campaign declined');
       await fetchCampaigns();
     } catch (e) {
       console.error(e);
-      alert(e.message || 'Action failed');
+      toast.error(e.message || 'Action failed');
     } finally {
       setActing(null);
+    }
+  };
+
+  const handleDelete = (campaignId, campaignTitle) => {
+    setConfirmDelete({ isOpen: true, campaignId, campaignTitle });
+  };
+
+  const confirmDeleteCampaign = async () => {
+    const { campaignId } = confirmDelete;
+    if (!campaignId) return;
+
+    setActing(`delete-${campaignId}`);
+    try {
+      await campaignAPI.delete(campaignId);
+      toast.success('Campaign deleted successfully');
+      await fetchCampaigns();
+    } catch (e) {
+      console.error(e);
+      toast.error(e.message || 'Failed to delete campaign');
+    } finally {
+      setActing(null);
+      setConfirmDelete({ isOpen: false, campaignId: null, campaignTitle: '' });
     }
   };
 
@@ -225,6 +251,21 @@ const NGOCampaigns = () => {
                           Edit
                         </Link>
                       )}
+                      {(campaign.status !== 'LIVE' || parseFloat(campaign.current_amount || 0) === 0) && (
+                        <button
+                          type="button"
+                          disabled={acting === `delete-${campaign.campaign_id}`}
+                          onClick={() => handleDelete(campaign.campaign_id, campaign.title)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-100 disabled:opacity-50"
+                          title="Delete Campaign"
+                        >
+                          {acting === `delete-${campaign.campaign_id}` ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -233,6 +274,16 @@ const NGOCampaigns = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, campaignId: null, campaignTitle: '' })}
+        onConfirm={confirmDeleteCampaign}
+        title="Delete Campaign"
+        message={`Are you sure you want to delete the campaign "${confirmDelete.campaignTitle}"? This action cannot be undone. \n\nNote: If the campaign has an escrow contract, it will still exist on-chain but won't be visible in the app.`}
+        isLoading={acting === `delete-${confirmDelete.campaignId}`}
+        confirmText="Delete"
+      />
     </NGOLayout>
   );
 };

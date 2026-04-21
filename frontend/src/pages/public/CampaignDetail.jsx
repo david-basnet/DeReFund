@@ -4,21 +4,30 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { publicAPI, milestoneAPI, donationAPI } from '../../utils/api';
 import { assets } from '../../assets/assets';
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useSendTransaction, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { parseEther } from 'viem';
 import toast from 'react-hot-toast';
+import { derefundEscrowAbi } from '../../contracts/DeReFundEscrow';
+import { useAuth } from '../../context/AuthContext';
 
 function formatUsd(n) {
   const x = Number(n) || 0;
   return x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 }
 
+function shortHash(hash) {
+  return hash ? `${hash.slice(0, 10)}...${hash.slice(-8)}` : '';
+}
+
 const CampaignDetail = () => {
   const { campaignId } = useParams();
   const navigate = useNavigate();
+  const { user, openRegisterModal } = useAuth();
   const { isConnected } = useAccount();
   const { sendTransaction, data: hash, isPending: isSending } = useSendTransaction();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, data: contractHash, isPending: isContractSending } = useWriteContract();
+  const activeHash = contractHash || hash;
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: activeHash });
 
   const [campaign, setCampaign] = useState(null);
   const [milestones, setMilestones] = useState([]);
@@ -44,13 +53,13 @@ const CampaignDetail = () => {
   const usdValue = (Number(donationAmount) * ethPrice).toFixed(2);
 
   useEffect(() => {
-    if (isConfirmed && hash) {
+    if (isConfirmed && activeHash) {
       const recordDonation = async () => {
         try {
           await donationAPI.create({
             campaign_id: campaignId,
             amount: usdValue,
-            tx_hash: hash,
+            tx_hash: activeHash,
             token_type: 'ETH',
           });
           toast.success('Donation successful! Thank you for your support.');
@@ -65,24 +74,69 @@ const CampaignDetail = () => {
       };
       recordDonation();
     }
-  }, [isConfirmed, hash, campaignId, usdValue]);
+  }, [isConfirmed, activeHash, campaignId, usdValue]);
 
   const handleDonate = async () => {
+    const parsedDonationUsd = Number(usdValue) || 0;
+
+    if (!user) {
+      toast.error('Create a donor account before donating.');
+      sessionStorage.setItem('authRedirectPath', `/campaigns/${campaignId}`);
+      openRegisterModal();
+      return;
+    }
+
+    if (String(user.role || '').toUpperCase() !== 'DONOR') {
+      toast.error('Only donor accounts can donate to campaigns.');
+      return;
+    }
+
     if (!isConnected) {
       toast.error('Please connect your wallet first');
       return;
     }
 
-    if (!campaign?.ngo_wallet_address) {
+    if ((Number(campaign?.current_amount) || 0) >= (Number(campaign?.target_amount) || 0)) {
+      toast.error('This campaign is already fully funded.');
+      setIsDonating(false);
+      return;
+    }
+
+    if (!Number.isFinite(parsedDonationUsd) || parsedDonationUsd <= 0) {
+      toast.error('Enter a valid donation amount.');
+      return;
+    }
+
+    const remainingUsd = Math.max((Number(campaign?.target_amount) || 0) - (Number(campaign?.current_amount) || 0), 0);
+    if (parsedDonationUsd > remainingUsd) {
+      toast.error(`This donation is above the remaining goal. Maximum allowed is $${remainingUsd.toFixed(2)}.`);
+      return;
+    }
+
+    if (!campaign?.contract_address && !campaign?.ngo_wallet_address) {
       toast.error('NGO wallet address not found');
+      return;
+    }
+    if (campaign?.contract_address && milestones.length === 0) {
+      toast.error('This campaign needs a milestone plan before escrow donations open.');
       return;
     }
 
     try {
-      sendTransaction({
-        to: campaign.ngo_wallet_address,
-        value: parseEther(donationAmount),
-      });
+      const value = parseEther(donationAmount);
+      if (campaign.contract_address) {
+        writeContract({
+          address: campaign.contract_address,
+          abi: derefundEscrowAbi,
+          functionName: 'donate',
+          value,
+        });
+      } else {
+        sendTransaction({
+          to: campaign.ngo_wallet_address,
+          value,
+        });
+      }
     } catch (err) {
       toast.error(err.message || 'Failed to send donation');
     }
@@ -163,6 +217,14 @@ const CampaignDetail = () => {
   const raised = Number(campaign?.current_amount) || 0;
   const target = Number(campaign?.target_amount) || 1;
   const pct = Math.min(100, Math.round((raised / target) * 100));
+  const remainingUsd = Math.max(target - raised, 0);
+  const campaignFullyFunded = remainingUsd <= 0;
+  const isDonorUser = String(user?.role || '').toUpperCase() === 'DONOR';
+  const walletRequiredBeforeDonate = Boolean(user) && isDonorUser && !isConnected;
+  const waitingForMilestones = Boolean(campaign?.contract_address) && milestones.length === 0;
+  const donationUsdValue = Number(usdValue) || 0;
+  const donationExceedsRemaining = !campaignFullyFunded && donationUsdValue > remainingUsd;
+  const donateButtonDisabled = walletRequiredBeforeDonate || waitingForMilestones || campaignFullyFunded;
 
   return (
     <div className="bg-surface font-body text-on-surface">
@@ -273,12 +335,13 @@ const CampaignDetail = () => {
                       </div>
                       <p className="text-xs text-on-surface-variant leading-relaxed">
                         Verified pipeline: donor- or NGO-submitted campaigns are reviewed (NGO confirmation for donor
-                        proposals, then admin publish) before they appear here.
+                        proposals, volunteer checks, then admin publish) before they appear here. NGO milestones list the
+                        planned work, proof, and release transaction below.
                       </p>
                     </div>
 
                     <div className="space-y-4 mt-6">
-                      {!campaign?.ngo_wallet_address ? (
+                      {!campaign?.contract_address && !campaign?.ngo_wallet_address ? (
                         <div className="p-6 bg-amber-50 border-2 border-amber-200 rounded-xl text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
                           <span className="material-symbols-outlined text-amber-500 text-4xl mb-2">account_balance_wallet</span>
                           <h4 className="text-amber-900 font-bold text-lg mb-1">Wallet Not Configured</h4>
@@ -320,51 +383,94 @@ const CampaignDetail = () => {
                             <button
                               type="button"
                               onClick={handleDonate}
-                              disabled={isSending || isConfirming}
-                              className="flex-1 primary-gradient text-on-primary py-3 rounded-lg font-bold shadow-lg disabled:opacity-50 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                              disabled={!isConnected || isSending || isContractSending || isConfirming || donationExceedsRemaining || campaignFullyFunded}
+                              className="flex-1 rounded-lg bg-slate-900 py-3 font-bold text-white shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 hover:bg-slate-800 disabled:cursor-not-allowed disabled:border disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
                             >
-                              {(isSending || isConfirming) ? (
+                              {(isSending || isContractSending || isConfirming) ? (
                                 <>
                                   <span className="animate-spin material-symbols-outlined">progress_activity</span>
-                                  {isSending ? 'Sending...' : 'Confirming...'}
+                                  {(isSending || isContractSending) ? 'Sending...' : 'Confirming...'}
                                 </>
                               ) : (
                                 <>
                                   <span className="material-symbols-outlined">send</span>
-                                  Send ETH
+                                  {!isConnected
+                                    ? 'Connect Wallet First'
+                                    : campaignFullyFunded
+                                      ? 'Goal Reached'
+                                      : campaign?.contract_address
+                                        ? 'Deposit to Escrow'
+                                        : 'Send ETH'}
                                 </>
                               )}
                             </button>
                             <button
                               type="button"
                               onClick={() => setIsDonating(false)}
-                              disabled={isSending || isConfirming}
+                              disabled={isSending || isContractSending || isConfirming}
                               className="px-4 py-3 bg-surface-container-low border border-outline-variant/30 rounded-lg text-on-surface-variant font-bold hover:bg-surface-container-high transition-all"
                             >
                               <span className="material-symbols-outlined">close</span>
                             </button>
                           </div>
+
+                          {donationExceedsRemaining && (
+                            <p className="text-xs font-semibold text-red-600">
+                              This amount is above the remaining goal. Maximum allowed is ${remainingUsd.toFixed(2)}.
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setIsDonating(true)}
-                          className="w-full primary-gradient text-on-primary py-4 rounded-md font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:shadow-primary/20"
+                          onClick={() => {
+                            if (walletRequiredBeforeDonate) {
+                              toast.error('Connect your wallet before donating.');
+                              return;
+                            }
+                            if (!user) {
+                              toast.error('Create a donor account before donating.');
+                              sessionStorage.setItem('authRedirectPath', `/campaigns/${campaignId}`);
+                              openRegisterModal();
+                              return;
+                            }
+                            if (String(user.role || '').toUpperCase() !== 'DONOR') {
+                              toast.error('Only donor accounts can donate to campaigns.');
+                              return;
+                            }
+                            setIsDonating(true);
+                          }}
+                          disabled={donateButtonDisabled}
+                          className="w-full rounded-md bg-slate-900 py-4 text-lg font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:bg-slate-800 disabled:cursor-not-allowed disabled:border disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
                         >
                           <span className="material-symbols-outlined">favorite</span>
-                          Donate Now
+                          {campaignFullyFunded
+                            ? 'Goal Reached'
+                            : waitingForMilestones
+                              ? 'Waiting for Milestone Plan'
+                              : walletRequiredBeforeDonate
+                                ? 'Connect Wallet First'
+                                : 'Donate Now'}
                         </button>
                       )}
                       
-                      {!isConnected && !isDonating && (
+                      {campaignFullyFunded ? (
+                        <p className="text-[10px] text-center text-emerald-700 font-bold">
+                          This campaign has reached 100% of its goal and is no longer accepting donations.
+                        </p>
+                      ) : !isConnected && !isDonating && (
                         <p className="text-[10px] text-center text-primary font-bold animate-pulse">
                           Connect your wallet to donate!
                         </p>
                       )}
                       
                       <p className="text-[10px] text-center text-outline leading-relaxed">
-                        Donations go directly to the NGO's verified wallet address: 
-                        <span className="block font-mono text-primary mt-1">{campaign?.ngo_wallet_address || 'Not set'}</span>
+                        {campaign?.contract_address
+                          ? 'Donations are locked in this campaign escrow contract:'
+                          : "Donations go directly to the NGO's verified wallet address:"}
+                        <span className="block font-mono text-primary mt-1">
+                          {campaign?.contract_address || campaign?.ngo_wallet_address || 'Not set'}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -434,9 +540,30 @@ const CampaignDetail = () => {
                             </div>
                             {m.amount_to_release != null && (
                               <p className="text-sm text-on-surface-variant mt-2">
-                                Release: {formatUsd(m.amount_to_release)}
+                                Release: ${Number(m.amount_to_release || 0).toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
                               </p>
                             )}
+                            {m.description && (
+                              <p className="text-sm text-on-surface mt-3 leading-relaxed">{m.description}</p>
+                            )}
+                            {m.proof_url && (
+                              <a
+                                href={m.proof_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 mt-4 text-sm font-bold text-primary hover:underline"
+                              >
+                                <span className="material-symbols-outlined text-base">fact_check</span>
+                                View NGO proof
+                              </a>
+                            )}
+                            <div className="mt-4 space-y-1 text-xs text-on-surface-variant font-mono break-all">
+                              {m.proof_tx_hash && <p>Proof tx: {shortHash(m.proof_tx_hash)}</p>}
+                              {m.release_tx_hash && <p>Release tx: {shortHash(m.release_tx_hash)}</p>}
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -452,7 +579,7 @@ const CampaignDetail = () => {
                     </h4>
                     <p className="text-sm leading-relaxed opacity-90">
                       This campaign has been verified by the community and approved by DeReFund administrators. 
-                      Funds are released to the NGO only upon meeting specific milestones.
+                      Funds release from escrow only after the NGO posts proof and an administrator approves the milestone.
                     </p>
                   </div>
 

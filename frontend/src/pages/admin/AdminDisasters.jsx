@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { disasterAPI } from '../../utils/api';
 import AdminLayout from '../../components/AdminLayout';
+import { toast } from 'react-hot-toast';
 import { AlertTriangle, CheckCircle, XCircle, Search, Filter, MapPin, Calendar, Globe } from 'lucide-react';
 
 // Helper function to get disaster image URL
@@ -53,10 +54,11 @@ const AdminDisasters = () => {
     try {
       setUpdatingId(caseId);
       await disasterAPI.updateStatus(caseId, status);
+      toast.success(`Disaster status updated to ${status}`);
       await fetchDisasters();
     } catch (error) {
       console.error('Error updating disaster status:', error);
-      alert(error.message || 'Failed to update disaster status');
+      toast.error(error.message || 'Failed to update disaster status');
     } finally {
       setUpdatingId(null);
     }

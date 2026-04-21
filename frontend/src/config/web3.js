@@ -8,7 +8,7 @@ if (!projectId || projectId === 'YOUR_PROJECT_ID') {
   console.warn('Reown Project ID is missing. Please add VITE_REOWN_PROJECT_ID to your .env file.')
 }
 
-export const networks = [mainnet, sepolia]
+export const networks = [sepolia, mainnet]
 
 // Set up Wagmi Adapter
 export const wagmiAdapter = new WagmiAdapter({

@@ -1,6 +1,14 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+const roleHome = (role) => {
+  const normalized = String(role || '').toUpperCase();
+  if (normalized === 'ADMIN') return '/admin';
+  if (normalized === 'NGO') return '/ngo';
+  if (normalized === 'DONOR') return '/donor';
+  return '/';
+};
+
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -14,7 +22,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   }
 
   if (!user) {
-    return <Navigate to="/" replace state={{ from: location }} />;
+    return <Navigate to="/" replace state={{ from: location, authRequired: true, authMode: 'signin' }} />;
   }
 
   if (requiredRole) {
@@ -23,7 +31,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     const requiredRoleUpper = requiredRole.toUpperCase();
     
     if (userRole !== requiredRoleUpper) {
-      return <Navigate to="/" replace state={{ from: location }} />;
+      return <Navigate to={roleHome(userRole)} replace state={{ roleMismatch: true, blockedPath: location.pathname }} />;
     }
   }
 

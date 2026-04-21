@@ -26,6 +26,10 @@ function normalizeImageUrls(raw) {
   return [];
 }
 
+function isValidAddressOrEmpty(value) {
+  return value == null || value === '' || /^0x[a-fA-F0-9]{40}$/.test(String(value).trim());
+}
+
 async function assertDisasterApproved(caseId) {
   const status = await getDisasterStatus(caseId);
   if (!status) {
@@ -117,7 +121,7 @@ const create = async (req, res, next) => {
       title,
       description,
       target_amount,
-      contract_address: contract_address || null,
+      contract_address: contract_address ? String(contract_address).trim() : null,
       status: 'PENDING_VERIFICATION',
       creation_source: 'NGO',
       creator_user_id: ngo_id,
@@ -303,12 +307,16 @@ const update = async (req, res, next) => {
       return res.status(403).json(formatResponse(false, 'Only administrators can change campaign status'));
     }
 
+    if (!isValidAddressOrEmpty(contract_address)) {
+      return res.status(400).json(formatResponse(false, 'Invalid escrow contract address'));
+    }
+
     const updates = {};
     if (title) updates.title = title;
     if (description) updates.description = description;
     if (target_amount !== undefined) updates.target_amount = target_amount;
     if (status && isAdmin) updates.status = status;
-    if (contract_address !== undefined) updates.contract_address = contract_address;
+    if (contract_address !== undefined) updates.contract_address = contract_address ? String(contract_address).trim() : null;
 
     if (verification_threshold !== undefined) {
       const threshold = parseInt(verification_threshold);
@@ -330,6 +338,48 @@ const update = async (req, res, next) => {
   }
 };
 
+const remove = async (req, res, next) => {
+  try {
+    const { campaignId } = req.params;
+    const campaign = await getCampaignById(campaignId);
+
+    if (!campaign) {
+      return res.status(404).json(formatResponse(false, 'Campaign not found'));
+    }
+
+    const isAdmin = req.user.role === 'ADMIN';
+    const isOwnerNgo = campaign.ngo_id === req.user.userId;
+
+    if (!isAdmin && !isOwnerNgo) {
+      return res.status(403).json(formatResponse(false, 'Not authorized to delete this campaign'));
+    }
+
+    // Business Rule: LIVE campaigns with donations should not be deleted, only cancelled
+    if (campaign.status === 'LIVE' && parseFloat(campaign.current_amount || 0) > 0) {
+      return res.status(400).json(
+        formatResponse(
+          false,
+          'This campaign is live and has received donations. It cannot be deleted. Use "Cancel" instead to handle refunds.'
+        )
+      );
+    }
+
+    await deleteCampaign(campaignId);
+
+    if (isAdmin) {
+      await insertAdminLog({
+        admin_id: req.user.userId,
+        action: 'DELETE_CAMPAIGN',
+        details: `Admin deleted campaign: ${campaign.title} (${campaignId})`,
+      });
+    }
+
+    res.json(formatResponse(true, 'Campaign deleted successfully'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   create,
   createAsDonor,
@@ -341,4 +391,5 @@ module.exports = {
   getById,
   getAll,
   update,
+  remove,
 };

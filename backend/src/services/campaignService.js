@@ -274,6 +274,14 @@ const updateCampaignAmount = async (campaignId, amount) => {
   return row;
 };
 
+const deleteCampaign = async (campaignId) => {
+  const [row] = await db
+    .delete(campaigns)
+    .where(eq(campaigns.campaign_id, campaignId))
+    .returning();
+  return row;
+};
+
 async function getDisasterStatus(caseId) {
   const [row] = await db
     .select({ status: disasterCases.status })
@@ -348,6 +356,7 @@ module.exports = {
   getPublicCampaignById,
   updateCampaign,
   updateCampaignAmount,
+  deleteCampaign,
   getDisasterStatus,
   isNgoVerificationApproved,
   listVerifiedNgos,

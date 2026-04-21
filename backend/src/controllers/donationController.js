@@ -1,4 +1,4 @@
-const { eq, sql } = require('drizzle-orm');
+const { eq } = require('drizzle-orm');
 const { db } = require('../db/client');
 const { donations, campaigns } = require('../db/schema');
 const { getDonationById, getDonationsByCampaign, getDonationsByDonor, getAllDonations } = require('../services/donationService');
@@ -40,7 +40,11 @@ const create = async (req, res, next) => {
       }
 
       const [campaign] = await tx
-        .select({ status: campaigns.status })
+        .select({
+          status: campaigns.status,
+          current_amount: campaigns.current_amount,
+          target_amount: campaigns.target_amount,
+        })
         .from(campaigns)
         .where(eq(campaigns.campaign_id, campaign_id))
         .limit(1);
@@ -54,6 +58,24 @@ const create = async (req, res, next) => {
           400
         );
       }
+
+      const donationAmount = Number(amount);
+      const currentAmount = Number(campaign.current_amount || 0);
+      const targetAmount = Number(campaign.target_amount || 0);
+      const remainingAmount = Math.max(targetAmount - currentAmount, 0);
+
+      if (currentAmount >= targetAmount) {
+        throw new AppError('This campaign is already 100% funded and cannot receive more donations.', 400);
+      }
+
+      if (donationAmount > remainingAmount) {
+        throw new AppError(
+          `This donation exceeds the remaining goal. Maximum allowed is $${remainingAmount.toFixed(2)}.`,
+          400
+        );
+      }
+
+      const newCurrentAmount = Math.min(targetAmount, currentAmount + donationAmount);
 
       const [row] = await tx
         .insert(donations)
@@ -70,7 +92,7 @@ const create = async (req, res, next) => {
       await tx
         .update(campaigns)
         .set({
-          current_amount: sql`${campaigns.current_amount} + ${Number(amount)}`,
+          current_amount: newCurrentAmount.toFixed(2),
         })
         .where(eq(campaigns.campaign_id, campaign_id));
 

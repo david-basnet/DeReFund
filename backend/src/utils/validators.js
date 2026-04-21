@@ -46,6 +46,45 @@ const validateLogin = [
   handleValidationErrors
 ];
 
+const validateRegistrationCode = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email'),
+  body('code')
+    .trim()
+    .isLength({ min: 6, max: 6 })
+    .isNumeric()
+    .withMessage('Verification code must be 6 digits'),
+  handleValidationErrors
+];
+
+const validateForgotPassword = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email'),
+  handleValidationErrors
+];
+
+const validateResetPassword = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email'),
+  body('code')
+    .trim()
+    .isLength({ min: 6, max: 6 })
+    .isNumeric()
+    .withMessage('Reset code must be 6 digits'),
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('New password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('New password must contain at least one uppercase, one lowercase, and one number'),
+  handleValidationErrors
+];
+
 const optionalHttpsUrls = (field = 'image_urls') =>
   body(field)
     .optional()
@@ -162,7 +201,7 @@ const validateMilestone = [
     .withMessage('Title must be between 5 and 150 characters'),
   body('amount_to_release')
     .isFloat({ min: 0.01 })
-    .withMessage('Amount must be greater than 0'),
+    .withMessage('Release amount in USD must be greater than 0'),
   body('order_index')
     .isInt({ min: 0 })
     .withMessage('Order index must be a non-negative integer'),
@@ -188,6 +227,9 @@ module.exports = {
   handleValidationErrors,
   validateRegister,
   validateLogin,
+  validateRegistrationCode,
+  validateForgotPassword,
+  validateResetPassword,
   validateCampaign,
   validateDonorCampaign,
   validateNgoCampaignDecision,

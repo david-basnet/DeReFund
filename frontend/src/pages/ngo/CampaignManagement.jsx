@@ -1,17 +1,39 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { campaignAPI, donationAPI, milestoneAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import NGOLayout from '../../components/NGOLayout';
+import ConfirmModal from '../../components/ConfirmModal';
+import { toast } from 'react-hot-toast';
+import { DollarSign, FileText, Loader2, Plus, Trash2 } from 'lucide-react';
+import { useAccount, useWriteContract } from 'wagmi';
+import { derefundEscrowAbi } from '../../contracts/DeReFundEscrow';
 
 const CampaignManagement = () => {
   const { campaignId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { isConnected } = useAccount();
+  const { writeContractAsync } = useWriteContract();
   const [campaign, setCampaign] = useState(null);
   const [donations, setDonations] = useState([]);
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [creatingMilestone, setCreatingMilestone] = useState(false);
+  const [milestoneError, setMilestoneError] = useState('');
+  const [milestoneSuccess, setMilestoneSuccess] = useState('');
+  const [proofInputs, setProofInputs] = useState({});
+  const [submittingProofId, setSubmittingProofId] = useState(null);
+  const [deletingMilestoneId, setDeletingMilestoneId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, milestone: null });
+  const [confirmDeleteCampaign, setConfirmDeleteCampaign] = useState({ isOpen: false });
+  const [deletingCampaign, setDeletingCampaign] = useState(false);
+  const [milestoneForm, setMilestoneForm] = useState({
+    title: '',
+    description: '',
+    amount_to_release: '',
+  });
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
@@ -66,6 +88,154 @@ const CampaignManagement = () => {
     }
   }, [campaignId]);
 
+  const refreshMilestones = async () => {
+    const milestonesData = await milestoneAPI.getByCampaign(campaignId);
+    const milestonesPayload =
+      milestonesData.data?.milestones ||
+      milestonesData.data?.data?.milestones ||
+      milestonesData.data ||
+      milestonesData.milestones ||
+      [];
+    setMilestones(Array.isArray(milestonesPayload) ? milestonesPayload : []);
+  };
+
+  const handleMilestoneInput = (field, value) => {
+    setMilestoneForm((prev) => ({ ...prev, [field]: value }));
+    setMilestoneError('');
+    setMilestoneSuccess('');
+  };
+
+  const handleDeleteCampaign = () => {
+    setConfirmDeleteCampaign({ isOpen: true });
+  };
+
+  const confirmDeleteCampaignAction = async () => {
+    try {
+      setDeletingCampaign(true);
+      await campaignAPI.delete(campaignId);
+      toast.success('Campaign deleted successfully');
+      navigate('/ngo/campaigns');
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      toast.error(error.message || 'Failed to delete campaign');
+    } finally {
+      setDeletingCampaign(false);
+      setConfirmDeleteCampaign({ isOpen: false });
+    }
+  };
+
+  const handleCreateMilestone = async (event) => {
+    event.preventDefault();
+    setMilestoneError('');
+    setMilestoneSuccess('');
+
+    const title = milestoneForm.title.trim();
+    const description = milestoneForm.description.trim();
+    const amount = Number(milestoneForm.amount_to_release);
+
+    if (title.length < 5) {
+      setMilestoneError('Title must be at least 5 characters.');
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setMilestoneError('Amount used must be greater than 0.');
+      return;
+    }
+
+    try {
+      setCreatingMilestone(true);
+      await milestoneAPI.create({
+        campaign_id: campaignId,
+        title,
+        description,
+        amount_to_release: amount,
+        order_index: milestones.length,
+      });
+      setMilestoneForm({ title: '', description: '', amount_to_release: '' });
+      setMilestoneSuccess('Milestone plan added to escrow. Donors can now see this release task.');
+      await refreshMilestones();
+    } catch (error) {
+      setMilestoneError(error.message || 'Failed to post milestone update.');
+    } finally {
+      setCreatingMilestone(false);
+    }
+  };
+
+  const handleProofInput = (milestoneId, value) => {
+    setProofInputs((prev) => ({ ...prev, [milestoneId]: value }));
+    setMilestoneError('');
+    setMilestoneSuccess('');
+  };
+
+  const handleSubmitProof = async (milestone) => {
+    const proofUrl = (proofInputs[milestone.milestone_id] || milestone.proof_url || '').trim();
+
+    if (!campaign.contract_address) {
+      setMilestoneError('This campaign does not have an escrow contract yet.');
+      return;
+    }
+    if (!isConnected) {
+      setMilestoneError('Connect the NGO wallet first, then submit proof.');
+      return;
+    }
+    if (!proofUrl) {
+      setMilestoneError('Add a proof link before submitting.');
+      return;
+    }
+    if (milestone.escrow_milestone_id == null) {
+      setMilestoneError('This milestone is not linked to the escrow contract.');
+      return;
+    }
+
+    try {
+      setSubmittingProofId(milestone.milestone_id);
+      const txHash = await writeContractAsync({
+        address: campaign.contract_address,
+        abi: derefundEscrowAbi,
+        functionName: 'submitProof',
+        args: [BigInt(milestone.escrow_milestone_id), proofUrl],
+      });
+
+      await milestoneAPI.submitProof(milestone.milestone_id, {
+        proof_url: proofUrl,
+        proof_tx_hash: txHash,
+      });
+
+      setMilestoneSuccess('Proof submitted. Admin can now review and release this milestone payment.');
+      setProofInputs((prev) => ({ ...prev, [milestone.milestone_id]: '' }));
+      await refreshMilestones();
+    } catch (error) {
+      setMilestoneError(error.shortMessage || error.message || 'Failed to submit milestone proof.');
+    } finally {
+      setSubmittingProofId(null);
+    }
+  };
+
+  const handleDeleteMilestone = async (milestone) => {
+    setConfirmDelete({ isOpen: true, milestone });
+  };
+
+  const confirmDeleteMilestone = async () => {
+    const { milestone } = confirmDelete;
+    if (!milestone) return;
+
+    try {
+      setDeletingMilestoneId(milestone.milestone_id);
+      setMilestoneError('');
+      setMilestoneSuccess('');
+      await milestoneAPI.delete(milestone.milestone_id);
+      setMilestoneSuccess('Milestone deleted successfully from the app.');
+      toast.success('Milestone deleted');
+      await refreshMilestones();
+    } catch (error) {
+      setMilestoneError(error.message || 'Failed to delete milestone.');
+      toast.error('Failed to delete milestone');
+    } finally {
+      setDeletingMilestoneId(null);
+      setConfirmDelete({ isOpen: false, milestone: null });
+    }
+  };
+
   // Now conditional returns can happen after all hooks
   if (!user || user.role !== 'NGO') {
     return (
@@ -109,6 +279,34 @@ const CampaignManagement = () => {
   const progressPercentage = campaign.target_amount > 0
     ? ((campaign.current_amount || 0) / campaign.target_amount) * 100
     : 0;
+  const hasEscrow = Boolean(campaign.contract_address);
+  const milestoneAmount = Number(milestoneForm.amount_to_release);
+  const canCreateMilestone =
+    hasEscrow &&
+    milestoneForm.title.trim().length >= 5 &&
+    milestoneForm.description.trim().length >= 10 &&
+    Number.isFinite(milestoneAmount) &&
+    milestoneAmount > 0 &&
+    !creatingMilestone;
+
+  const getProofUrl = (milestone) =>
+    (proofInputs[milestone.milestone_id] ?? milestone.proof_url ?? '').trim();
+
+  const canSubmitProof = (milestone) =>
+    hasEscrow &&
+    isConnected &&
+    getProofUrl(milestone).length >= 5 &&
+    milestone.status !== 'SUBMITTED' &&
+    milestone.status !== 'APPROVED' &&
+    submittingProofId !== milestone.milestone_id;
+
+  const getProofButtonHint = (milestone) => {
+    if (milestone.status === 'SUBMITTED') return 'Proof is already waiting for admin review.';
+    if (milestone.status === 'APPROVED') return 'This milestone has already been released.';
+    if (!isConnected) return 'Connect the NGO wallet before submitting proof.';
+    if (getProofUrl(milestone).length < 5) return 'Add a proof link to enable submission.';
+    return '';
+  };
 
   return (
     <NGOLayout>
@@ -121,12 +319,28 @@ const CampaignManagement = () => {
                 <h1 className="text-3xl font-bold text-black mb-2 tracking-tight">{campaign.title}</h1>
                 <p className="text-gray-800 tracking-tight">{campaign.description}</p>
               </div>
-              <Link
-                to={`/ngo/campaigns/${campaignId}/edit`}
-                className="px-6 py-3 bg-gradient-to-r from-primary to-[#001a38] text-white rounded-xl hover:shadow-lg transition-all duration-300 font-bold tracking-tight"
-              >
-                Edit Campaign
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  to={`/ngo/campaigns/${campaignId}/edit`}
+                  className="px-6 py-3 bg-gradient-to-r from-primary to-[#001a38] text-white rounded-xl hover:shadow-lg transition-all duration-300 font-bold tracking-tight"
+                >
+                  Edit Campaign
+                </Link>
+                {(campaign.status !== 'LIVE' || parseFloat(campaign.current_amount || 0) === 0) && (
+                  <button
+                    onClick={handleDeleteCampaign}
+                    disabled={deletingCampaign}
+                    className="px-6 py-3 bg-red-50 text-red-600 border-2 border-red-100 rounded-xl hover:bg-red-100 hover:border-red-200 transition-all duration-300 font-bold tracking-tight flex items-center gap-2"
+                  >
+                    {deletingCampaign ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-5 h-5" />
+                    )}
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -283,13 +497,91 @@ const CampaignManagement = () => {
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold text-black tracking-tight">Campaign Milestones</h2>
-                  <Link
-                    to={`/ngo/campaigns/${campaignId}/milestones`}
-                    className="px-4 py-2 bg-primary-fixed/70 text-primary rounded-lg font-bold text-sm hover:bg-primary-fixed transition-all"
-                  >
-                    Manage Milestones
-                  </Link>
+                  <span className={`px-4 py-2 rounded-lg font-bold text-sm ${
+                    hasEscrow ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {hasEscrow ? 'Escrow ready' : 'Escrow not deployed'}
+                  </span>
                 </div>
+                {hasEscrow ? (
+                  <form onSubmit={handleCreateMilestone} className="mb-6 p-5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="mt-1 rounded-lg bg-primary text-white p-2">
+                        <Plus className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 tracking-tight">Add release milestone plan</h3>
+                        <p className="text-sm text-slate-600 tracking-tight">
+                          Define what work must be proven before this part of the escrow can be released.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          Milestone task
+                        </label>
+                        <input
+                          value={milestoneForm.title}
+                          onChange={(e) => handleMilestoneInput('title', e.target.value)}
+                          className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="Food supplies delivered"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          Release amount (USD)
+                        </label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={milestoneForm.amount_to_release}
+                          onChange={(e) => handleMilestoneInput('amount_to_release', e.target.value)}
+                          className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="20"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Planned work
+                      </label>
+                      <textarea
+                        value={milestoneForm.description}
+                        onChange={(e) => handleMilestoneInput('description', e.target.value)}
+                        rows={4}
+                        className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        placeholder="Describe what the NGO will complete before requesting this release."
+                      />
+                    </div>
+                    {milestoneError && (
+                      <p className="mb-3 text-sm font-bold text-red-600 tracking-tight">{milestoneError}</p>
+                    )}
+                    {milestoneSuccess && (
+                      <p className="mb-3 text-sm font-bold text-green-700 tracking-tight">{milestoneSuccess}</p>
+                    )}
+                    {!canCreateMilestone && !creatingMilestone && (
+                      <p className="mb-3 text-sm font-semibold text-slate-600 tracking-tight">
+                        Fill the task, release amount, and planned work to add this milestone.
+                      </p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={!canCreateMilestone}
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:border disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+                    >
+                      {creatingMilestone ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      {creatingMilestone ? 'Adding Milestone...' : 'Add Milestone Plan'}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="mb-6 p-5 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-sm text-slate-700 font-medium tracking-tight">
+                      Milestones can be added after admin publishes the campaign and the escrow contract is deployed.
+                    </p>
+                  </div>
+                )}
                 {milestones.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
@@ -299,15 +591,80 @@ const CampaignManagement = () => {
                   <div className="space-y-4">
                     {milestones.map((m) => (
                       <div key={m.milestone_id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-primary/30 transition-all">
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex justify-between items-start gap-3 mb-2">
                           <h4 className="font-bold text-slate-900 tracking-tight">{m.title}</h4>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                            m.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-primary-fixed/50 text-primary'
-                          }`}>
-                            {m.status}
-                          </span>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                              m.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                              m.status === 'SUBMITTED' ? 'bg-amber-100 text-amber-700' :
+                              'bg-primary-fixed/50 text-primary'
+                            }`}>
+                              {m.status}
+                            </span>
+                            {m.status !== 'APPROVED' && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMilestone(m)}
+                                disabled={deletingMilestoneId === m.milestone_id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                title="Delete milestone"
+                              >
+                                {deletingMilestoneId === m.milestone_id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3 w-3" />
+                                )}
+                                Delete
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-slate-600 line-clamp-2 tracking-tight">{m.description}</p>
+                        <p className="text-sm text-slate-600 tracking-tight">{m.description}</p>
+                        <div className="mt-3 flex flex-wrap gap-3 text-xs font-bold text-slate-600">
+                          <span>Release: ${Number(m.amount_to_release || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          {m.escrow_milestone_id != null && <span>Escrow ID: {m.escrow_milestone_id}</span>}
+                          {m.release_tx_hash && <span>Released: {m.release_tx_hash.slice(0, 8)}...{m.release_tx_hash.slice(-6)}</span>}
+                        </div>
+                        {m.proof_url && (
+                          <a
+                            href={m.proof_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-block text-sm font-bold text-primary hover:underline"
+                          >
+                            View submitted proof
+                          </a>
+                        )}
+                        {m.status !== 'APPROVED' && (
+                          <div className="mt-4">
+                            <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                              <input
+                                value={proofInputs[m.milestone_id] ?? ''}
+                                onChange={(e) => handleProofInput(m.milestone_id, e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                placeholder="Proof link: receipt, report, photo folder, IPFS URL"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSubmitProof(m)}
+                                disabled={!canSubmitProof(m)}
+                                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:border disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+                              >
+                                {submittingProofId === m.milestone_id && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {submittingProofId === m.milestone_id
+                                  ? 'Submitting Proof...'
+                                  : m.status === 'SUBMITTED'
+                                  ? 'Waiting Admin'
+                                  : 'Submit Proof'}
+                              </button>
+                            </div>
+                            {getProofButtonHint(m) && (
+                              <p className="mt-2 text-xs font-semibold text-slate-500">
+                                {getProofButtonHint(m)}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -317,6 +674,26 @@ const CampaignManagement = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, milestone: null })}
+        onConfirm={confirmDeleteMilestone}
+        title="Delete Milestone"
+        message={`Delete milestone "${confirmDelete.milestone?.title}" from this campaign? \n\nIf it was already added to the smart contract, the on-chain record cannot be erased, but the app will stop using this milestone.`}
+        isLoading={deletingMilestoneId !== null}
+        confirmText="Delete"
+      />
+
+      <ConfirmModal
+        isOpen={confirmDeleteCampaign.isOpen}
+        onClose={() => setConfirmDeleteCampaign({ isOpen: false })}
+        onConfirm={confirmDeleteCampaignAction}
+        title="Delete Campaign"
+        message={`Are you sure you want to delete the campaign "${campaign.title}"? This action cannot be undone. \n\nNote: If the campaign has an escrow contract, it will still exist on-chain but won't be visible in the app.`}
+        isLoading={deletingCampaign}
+        confirmText="Delete"
+      />
     </NGOLayout>
   );
 };

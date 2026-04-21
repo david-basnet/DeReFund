@@ -38,6 +38,19 @@ const hasVolunteerVerified = async (campaignId, volunteerId) => {
   return Number(r?.c ?? 0) > 0;
 };
 
+const removeVolunteerVerification = async (campaignId, volunteerId) => {
+  const rows = await db
+    .delete(volunteerVerifications)
+    .where(
+      and(
+        eq(volunteerVerifications.campaign_id, campaignId),
+        eq(volunteerVerifications.volunteer_id, volunteerId)
+      )
+    )
+    .returning();
+  return rows[0] || null;
+};
+
 const getCampaignVerifications = async (campaignId) => {
   return db
     .select({
@@ -106,8 +119,15 @@ const getCampaignsPendingVerification = async (page = 1, limit = 10, volunteerId
     .from(campaigns)
     .where(eq(campaigns.status, 'PENDING_VERIFICATION'));
 
+  const campaignsWithVoters = await Promise.all(
+    rows.map(async (campaign) => ({
+      ...campaign,
+      volunteer_voters: await getCampaignVerifications(campaign.campaign_id),
+    }))
+  );
+
   return {
-    campaigns: rows,
+    campaigns: campaignsWithVoters,
     total: Number(countRow?.total ?? 0),
     page,
     limit,
@@ -116,6 +136,7 @@ const getCampaignsPendingVerification = async (page = 1, limit = 10, volunteerId
 
 module.exports = {
   createVolunteerVerification,
+  removeVolunteerVerification,
   getVerificationCount,
   hasVolunteerVerified,
   getCampaignVerifications,

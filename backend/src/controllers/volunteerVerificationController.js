@@ -1,5 +1,6 @@
 const { 
   createVolunteerVerification, 
+  removeVolunteerVerification,
   getVerificationCount, 
   hasVolunteerVerified,
   getCampaignVerifications,
@@ -7,7 +8,6 @@ const {
 } = require('../services/volunteerVerificationService');
 const { getCampaignById, updateCampaign } = require('../services/campaignService');
 const { formatResponse } = require('../utils/helpers');
-const { pool } = require('../config/database');
 
 // const REQUIRED_VERIFICATIONS = 20; // Replaced by campaign-specific threshold
 
@@ -64,6 +64,45 @@ const verifyCampaign = async (req, res, next) => {
   }
 };
 
+// Remove a volunteer vote from a campaign
+const unverifyCampaign = async (req, res, next) => {
+  try {
+    const { campaignId } = req.params;
+    const volunteerId = req.user.userId;
+    const role = (req.user.role || '').toUpperCase();
+
+    if (role !== 'DONOR') {
+      return res.status(403).json(formatResponse(false, 'Only donor volunteers can remove campaign votes'));
+    }
+
+    const campaign = await getCampaignById(campaignId);
+    if (!campaign) {
+      return res.status(404).json(formatResponse(false, 'Campaign not found'));
+    }
+
+    if (campaign.status !== 'PENDING_VERIFICATION') {
+      return res.status(400).json(formatResponse(false, 'Votes can be changed only while campaign is pending verification'));
+    }
+
+    const existing = await hasVolunteerVerified(campaignId, volunteerId);
+    if (!existing) {
+      return res.status(400).json(formatResponse(false, 'You have not voted for this campaign'));
+    }
+
+    await removeVolunteerVerification(campaignId, volunteerId);
+    const verificationCount = await getVerificationCount(campaignId);
+    const threshold = campaign.verification_threshold || 20;
+
+    res.json(formatResponse(true, 'Vote removed successfully', {
+      verificationCount,
+      required: threshold,
+      status: campaign.status,
+    }));
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get campaigns pending verification
 const getPendingVerificationCampaigns = async (req, res, next) => {
   try {
@@ -112,6 +151,7 @@ const getCampaignVerificationStatus = async (req, res, next) => {
 
 module.exports = {
   verifyCampaign,
+  unverifyCampaign,
   getPendingVerificationCampaigns,
   getCampaignVerificationStatus
 };

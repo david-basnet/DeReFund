@@ -79,7 +79,7 @@
   height: 100%;
   transition: all 0.5s ease-in-out; /* 0.1s faster */
   will-change: transform, opacity;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .form-container form {
@@ -91,27 +91,44 @@
   left: 0;
   width: 50%;
   z-index: 2;
-  position: relative;
+  position: absolute;
 }
 
 .auth-container.right-panel-active .sign-in-container {
   transform: translateX(100%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .sign-up-container {
   left: 0;
   width: 50%;
-  opacity: 0;
+  opacity: 0 !important;
+  visibility: hidden;
   z-index: 1;
   pointer-events: none;
 }
 
 .auth-container.right-panel-active .sign-up-container {
   transform: translateX(100%);
-  opacity: 1;
+  opacity: 1 !important;
+  visibility: visible;
   z-index: 5;
   pointer-events: auto;
   animation: show 0.5s; /* 0.1s faster */
+}
+
+.auth-container:not(.right-panel-active):not(.forgot-password-active) .sign-up-container {
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.auth-container:not(.right-panel-active):not(.forgot-password-active) .sign-in-container {
+  opacity: 1 !important;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .forgot-password-container {
@@ -130,6 +147,8 @@
   opacity: 1;
   z-index: 100;
   pointer-events: auto;
+  transform: translateX(0);
+  visibility: visible;
 }
 
 @keyframes show {
@@ -311,6 +330,18 @@
 .auth-container button:hover {
   background-color: #050E3C;
   border-color: #050E3C;
+}
+
+.auth-container button.auth-secondary-button {
+  background: #ffffff;
+  border-color: #d6dde8;
+  color: #102033;
+  box-shadow: none;
+}
+
+.auth-container button.auth-secondary-button:hover {
+  background: #f3f6fa;
+  border-color: #b8c3d1;
 }
 
 .auth-container button:active {

@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { adminAPI, volunteerVerificationAPI } from '../../utils/api';
+import { adminAPI, volunteerVerificationAPI, campaignAPI } from '../../utils/api';
 import AdminLayout from '../../components/AdminLayout';
-import { CheckCircle, XCircle, Users, Clock, AlertCircle, ShieldCheck, FileText, DollarSign } from 'lucide-react';
+import ConfirmModal from '../../components/ConfirmModal';
+import { toast } from 'react-hot-toast';
+import { CheckCircle, XCircle, Users, Clock, AlertCircle, ShieldCheck, FileText, DollarSign, Trash2, Loader2 } from 'lucide-react';
+import { assets } from '../../assets/assets';
 
 const AdminCampaigns = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState(null);
+  const [releasingId, setReleasingId] = useState(null);
   const [verificationStatuses, setVerificationStatuses] = useState({});
+  const [submittedMilestones, setSubmittedMilestones] = useState([]);
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, campaignId: null, campaignTitle: '' });
+  const [acting, setActing] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -19,8 +26,11 @@ const AdminCampaigns = () => {
     try {
       setLoading(true);
       const response = await adminAPI.getCampaignsPendingApproval({ limit: 50 });
+      const milestonesResponse = await adminAPI.getSubmittedMilestones({ limit: 50 }).catch(() => ({ data: { milestones: [] } }));
       const campaignsList = response.data?.campaigns || [];
+      const milestoneList = milestonesResponse.data?.milestones || milestonesResponse.milestones || [];
       setCampaigns(campaignsList);
+      setSubmittedMilestones(Array.isArray(milestoneList) ? milestoneList : []);
 
       // Fetch verification status in parallel batches for better performance
       if (campaignsList.length > 0) {
@@ -58,12 +68,49 @@ const AdminCampaigns = () => {
     try {
       setApprovingId(campaignId);
       await adminAPI.approveCampaign(campaignId, { status });
+      toast.success(`Campaign status updated to ${status}`);
       await fetchCampaigns();
     } catch (error) {
       console.error('Error approving campaign:', error);
-      alert(error.message || 'Failed to approve campaign');
+      toast.error(error.message || 'Failed to approve campaign');
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const handleReleaseMilestone = async (milestoneId) => {
+    try {
+      setReleasingId(milestoneId);
+      await adminAPI.releaseMilestone(milestoneId);
+      toast.success('Milestone funds released');
+      await fetchCampaigns();
+    } catch (error) {
+      console.error('Error releasing milestone:', error);
+      toast.error(error.message || 'Failed to release milestone funds');
+    } finally {
+      setReleasingId(null);
+    }
+  };
+
+  const handleDelete = (campaignId, campaignTitle) => {
+    setConfirmDelete({ isOpen: true, campaignId, campaignTitle });
+  };
+
+  const confirmDeleteCampaign = async () => {
+    const { campaignId } = confirmDelete;
+    if (!campaignId) return;
+
+    setActing(`delete-${campaignId}`);
+    try {
+      await campaignAPI.delete(campaignId);
+      toast.success('Campaign deleted successfully');
+      await fetchCampaigns();
+    } catch (e) {
+      console.error(e);
+      toast.error(e.message || 'Failed to delete campaign');
+    } finally {
+      setActing(null);
+      setConfirmDelete({ isOpen: false, campaignId: null, campaignTitle: '' });
     }
   };
 
@@ -96,6 +143,66 @@ const AdminCampaigns = () => {
             Publish campaigns that are ready: NGO-confirmed donor proposals and NGO-submitted campaigns (legacy
             volunteer-verified flows still appear here).
           </p>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-slate-900 mb-3 tracking-tight">Milestone Proofs Waiting for Release</h2>
+          {submittedMilestones.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-slate-600 tracking-tight">
+              No milestone proofs are waiting for approval.
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {submittedMilestones.map((milestone) => (
+                <div key={milestone.milestone_id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <h3 className="font-bold text-slate-900 tracking-tight">{milestone.title}</h3>
+                      <p className="text-xs text-slate-500 font-semibold tracking-tight">
+                        {milestone.campaign_title} • {milestone.ngo_name || 'NGO'}
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+                      SUBMITTED
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 mb-3 tracking-tight">{milestone.description}</p>
+                  <div className="text-xs font-semibold text-slate-700 space-y-1 mb-4">
+                    <p>
+                      Release amount: ${Number(milestone.amount_to_release || 0).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                    <p>Escrow ID: {milestone.escrow_milestone_id ?? 'Not linked'}</p>
+                    {milestone.proof_tx_hash && (
+                      <p>Proof tx: {milestone.proof_tx_hash.slice(0, 10)}...{milestone.proof_tx_hash.slice(-8)}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {milestone.proof_url && (
+                      <a
+                        href={milestone.proof_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 text-center bg-slate-100 text-slate-800 px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors text-sm font-bold tracking-tight"
+                      >
+                        View Proof
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleReleaseMilestone(milestone.milestone_id)}
+                      disabled={releasingId === milestone.milestone_id}
+                      className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 text-sm font-bold tracking-tight"
+                    >
+                      {releasingId === milestone.milestone_id ? 'Releasing...' : 'Approve & Release'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Campaigns Grid */}
@@ -188,6 +295,16 @@ const AdminCampaigns = () => {
                       </div>
                     </div>
 
+                    <div className={`mb-4 p-3 rounded-lg border text-xs font-semibold ${
+                      campaign.contract_address
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                        : 'bg-amber-50 border-amber-200 text-amber-800'
+                    }`}>
+                      {campaign.contract_address
+                        ? `Escrow: ${campaign.contract_address.slice(0, 6)}...${campaign.contract_address.slice(-4)}`
+                        : 'No escrow contract address set. Donations will not use smart-contract escrow.'}
+                    </div>
+
                     <div className="flex gap-2 mt-4">
                       {campaign.status === 'PENDING_ADMIN_APPROVAL' && campaign.creation_source === 'DONOR' ? (
                         <>
@@ -235,6 +352,19 @@ const AdminCampaigns = () => {
                         <FileText className="w-4 h-4" />
                         View
                       </Link>
+                      <button
+                        type="button"
+                        disabled={acting === `delete-${campaign.campaign_id}`}
+                        onClick={() => handleDelete(campaign.campaign_id, campaign.title)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-100 disabled:opacity-50"
+                        title="Delete Campaign"
+                      >
+                        {acting === `delete-${campaign.campaign_id}` ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -243,6 +373,16 @@ const AdminCampaigns = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, campaignId: null, campaignTitle: '' })}
+        onConfirm={confirmDeleteCampaign}
+        title="Delete Campaign"
+        message={`Are you sure you want to delete the campaign "${confirmDelete.campaignTitle}"? This action cannot be undone. \n\nNote: If the campaign has an escrow contract, it will still exist on-chain but won't be visible in the app.`}
+        isLoading={acting === `delete-${confirmDelete.campaignId}`}
+        confirmText="Delete"
+      />
     </AdminLayout>
   );
 };

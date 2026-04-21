@@ -99,7 +99,10 @@ const apiCall = async (endpoint, options = {}) => {
 // Auth API
 export const authAPI = {
   register: (userData) => apiCall('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
+  verifyRegistration: (data) => apiCall('/auth/register/verify', { method: 'POST', body: JSON.stringify(data) }),
   login: (credentials) => apiCall('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  requestPasswordReset: (data) => apiCall('/auth/password/forgot', { method: 'POST', body: JSON.stringify(data) }),
+  resetPassword: (data) => apiCall('/auth/password/reset', { method: 'POST', body: JSON.stringify(data) }),
   getProfile: () => apiCall('/auth/me'),
   updateProfile: (updates) => apiCall('/auth/profile', { method: 'PATCH', body: JSON.stringify(updates) }),
   changePassword: (data) => apiCall('/auth/password', { method: 'PATCH', body: JSON.stringify(data) }),
@@ -141,6 +144,7 @@ export const campaignAPI = {
       body: JSON.stringify({ approved }),
     }),
   update: (campaignId, updates) => apiCall(`/campaigns/${campaignId}`, { method: 'PATCH', body: JSON.stringify(updates) }),
+  delete: (campaignId) => apiCall(`/campaigns/${campaignId}`, { method: 'DELETE' }),
 };
 
 // Donation API
@@ -166,7 +170,9 @@ export const milestoneAPI = {
   getByCampaign: (campaignId) => apiCall(`/milestones/campaign/${campaignId}`),
   getById: (milestoneId) => apiCall(`/milestones/${milestoneId}`),
   create: (milestoneData) => apiCall('/milestones', { method: 'POST', body: JSON.stringify(milestoneData) }),
+  submitProof: (milestoneId, data) => apiCall(`/milestones/${milestoneId}/proof`, { method: 'PATCH', body: JSON.stringify(data) }),
   updateStatus: (milestoneId, status) => apiCall(`/milestones/${milestoneId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  delete: (milestoneId) => apiCall(`/milestones/${milestoneId}`, { method: 'DELETE' }),
 };
 
 // Admin API
@@ -186,6 +192,11 @@ export const adminAPI = {
     return apiCall(`/admin/campaigns/pending${queryString ? `?${queryString}` : ''}`);
   },
   approveCampaign: (campaignId, data) => apiCall(`/admin/campaigns/${campaignId}/approve`, { method: 'PATCH', body: JSON.stringify(data) }),
+  getSubmittedMilestones: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiCall(`/admin/milestones/submitted${queryString ? `?${queryString}` : ''}`);
+  },
+  releaseMilestone: (milestoneId) => apiCall(`/admin/milestones/${milestoneId}/release`, { method: 'PATCH' }),
   getDashboardStats: () => apiCall('/admin/dashboard/stats'),
 };
 
@@ -197,6 +208,7 @@ export const volunteerVerificationAPI = {
   },
   getCampaignVerificationStatus: (campaignId) => apiCall(`/volunteer-verification/campaign/${campaignId}`),
   verifyCampaign: (campaignId) => apiCall(`/volunteer-verification/campaign/${campaignId}/verify`, { method: 'POST' }),
+  unverifyCampaign: (campaignId) => apiCall(`/volunteer-verification/campaign/${campaignId}/verify`, { method: 'DELETE' }),
 };
 
 // Notification API

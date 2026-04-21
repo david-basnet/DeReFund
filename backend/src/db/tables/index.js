@@ -20,6 +20,7 @@ const { milestones } = require('./milestones');
 const { volunteerVerifications } = require('./volunteerVerifications');
 const { adminLogs } = require('./adminLogs');
 const { notifications } = require('./notifications');
+const { emailAuthCodes } = require('./emailAuthCodes');
 
 module.exports = {
   userRoleEnum,
@@ -39,4 +40,5 @@ module.exports = {
   volunteerVerifications,
   adminLogs,
   notifications,
+  emailAuthCodes,
 };

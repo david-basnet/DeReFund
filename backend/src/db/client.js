@@ -14,6 +14,16 @@ async function testConnection() {
     if (error.code) {
       console.error('Error code:', error.code);
     }
+    if (error.cause) {
+      console.error('Cause:', error.cause.message || error.cause);
+      if (error.cause.code) console.error('Cause code:', error.cause.code);
+    }
+    if (Array.isArray(error.errors)) {
+      error.errors.forEach((inner, index) => {
+        console.error(`Inner database error ${index + 1}:`, inner.message || inner);
+        if (inner.code) console.error(`Inner database error ${index + 1} code:`, inner.code);
+      });
+    }
     return false;
   }
 }

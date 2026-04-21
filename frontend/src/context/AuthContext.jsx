@@ -73,6 +73,10 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
+      if (response.data?.requires_verification) {
+        return response;
+      }
+
       localStorage.setItem('token', response.data.token);
       
       const userFromResponse = response.data?.user || response.user || response.data;
@@ -86,6 +90,25 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (error) {
       console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  const verifyRegistration = async (data) => {
+    try {
+      const response = await authAPI.verifyRegistration(data);
+      localStorage.setItem('token', response.data.token);
+
+      const userFromResponse = response.data?.user || response.user || response.data;
+      setUser(userFromResponse);
+
+      setTimeout(() => {
+        open();
+      }, 500);
+
+      return response;
+    } catch (error) {
+      console.error('Registration verification error:', error);
       throw error;
     }
   };
@@ -120,6 +143,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
+        verifyRegistration,
         logout,
         openLoginModal,
         openRegisterModal,

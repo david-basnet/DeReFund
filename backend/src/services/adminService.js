@@ -91,13 +91,14 @@ async function getCampaignByIdRaw(campaignId) {
   return row;
 }
 
-async function updateCampaignAdminApproval(campaignId, status, adminUserId) {
+async function updateCampaignAdminApproval(campaignId, status, adminUserId, extraUpdates = {}) {
   const [row] = await db
     .update(campaigns)
     .set({
       status,
       admin_approved_by: adminUserId,
       admin_approved_at: new Date(),
+      ...extraUpdates,
       updated_at: new Date(),
     })
     .where(eq(campaigns.campaign_id, campaignId))

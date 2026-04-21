@@ -43,6 +43,20 @@
       "when": 1776501023042,
       "tag": "0005_wealthy_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776759060000,
+      "tag": "0006_milestone_escrow_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776720287799,
+      "tag": "0007_ambitious_silver_surfer",
+      "breakpoints": true
     }
   ]
 }

@@ -28,8 +28,8 @@ const AdminLayout = ({ children }) => {
     { path: '/admin/users', icon: Users, label: 'Users' },
     { path: '/admin/campaigns', icon: FileText, label: 'Campaigns' },
     { path: '/admin/disasters', icon: AlertTriangle, label: 'Disasters' },
-    { path: '/volunteer/voting', icon: ShieldCheck, label: 'Volunteer Voting' },
     { path: '/admin/logs', icon: Activity, label: 'Activity Logs' },
+    { path: '/admin/profile', icon: Settings, label: 'Profile Settings' },
   ];
 
   const isActive = (path) => {

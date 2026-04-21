@@ -37,6 +37,18 @@ const env = {
   // JWT
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  EMAIL_CODE_TTL_MINUTES: parseInt(process.env.EMAIL_CODE_TTL_MINUTES || '10'),
+
+  // Email
+  SMTP_HOST: process.env.SMTP_HOST || '',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '587'),
+  SMTP_SECURE: process.env.SMTP_SECURE === 'true',
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  MAIL_FROM: process.env.MAIL_FROM || '',
+  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY || '',
+  SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL || '',
+  SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME || 'DeReFund',
   
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
@@ -45,6 +57,11 @@ const env = {
   
   // Blockchain
   POLYGON_RPC_URL: process.env.POLYGON_RPC_URL || 'https://rpc-mumbai.maticvigil.com',
+  SEPOLIA_RPC_URL: process.env.SEPOLIA_RPC_URL || process.env.ETHEREUM_SEPOLIA_RPC_URL || '',
+  PRIVATE_KEY: process.env.PRIVATE_KEY || '',
+  ESCROW_DEPLOYER_PRIVATE_KEY: process.env.ESCROW_DEPLOYER_PRIVATE_KEY || '',
+  ESCROW_ADMIN_WALLET: process.env.ESCROW_ADMIN_WALLET || '',
+  ESCROW_ETH_USD_RATE: parseFloat(process.env.ESCROW_ETH_USD_RATE || '2500'),
   CONTRACT_ADDRESS: process.env.CONTRACT_ADDRESS || '',
   
   // CORS

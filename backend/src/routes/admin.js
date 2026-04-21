@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, isAdmin } = require('../middleware/auth');
 const { verifyUser, getAllUsers, getAdminLogs, approveCampaign, getCampaignsPendingApproval, getDashboardStats, deleteUser } = require('../controllers/adminController');
+const { getSubmittedForAdmin, release } = require('../controllers/milestoneController');
 
 // All admin routes require authentication and admin role
 router.use(authenticate);
@@ -21,6 +22,12 @@ router.get('/logs', getAdminLogs);
 
 // Get campaigns pending admin approval
 router.get('/campaigns/pending', getCampaignsPendingApproval);
+
+// Get milestone proofs waiting for release approval
+router.get('/milestones/submitted', getSubmittedForAdmin);
+
+// Approve proof and release escrow funds
+router.patch('/milestones/:milestoneId/release', release);
 
 // Approve/reject campaign after volunteer verification
 router.patch('/campaigns/:campaignId/approve', approveCampaign);
