@@ -6,6 +6,8 @@ import NGOLayout from '../../components/NGOLayout';
 import CampaignStatusBadge from '../../components/CampaignStatusBadge';
 import { DollarSign, FileText, TrendingUp, Users, Plus, Heart, ArrowRight } from 'lucide-react';
 
+const DASHBOARD_LIMIT = 1000;
+
 const NGOPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -18,7 +20,7 @@ const NGOPage = () => {
       try {
         setLoading(true);
         const userId = user?.user_id || user?.id;
-        const response = await campaignAPI.getAll({ ngo_id: userId });
+        const response = await campaignAPI.getAll({ ngo_id: userId, limit: DASHBOARD_LIMIT });
         const campaignsData =
           response.data?.campaigns ||
           response.data?.data?.campaigns ||
@@ -29,11 +31,15 @@ const NGOPage = () => {
         setCampaigns(campaignsArray);
         setStats({ totalCampaigns: campaignsArray.length });
 
-        // Calculate total raised
-        let totalRaised = 0;
+        // Calculate live totals from database-backed campaign rows.
+        let totalRaised = campaignsArray.reduce(
+          (sum, campaign) => sum + parseFloat(campaign.current_amount || 0),
+          0
+        );
+        let totalDonors = 0;
         for (const campaign of campaignsArray) {
           try {
-            const donationsResponse = await donationAPI.getByCampaign(campaign.campaign_id);
+            const donationsResponse = await donationAPI.getByCampaign(campaign.campaign_id, { limit: 1 });
             const donationsData =
               donationsResponse.data?.donations ||
               donationsResponse.data?.data?.donations ||
@@ -41,13 +47,12 @@ const NGOPage = () => {
               donationsResponse.donations ||
               [];
             const donationsArray = Array.isArray(donationsData) ? donationsData : [];
-            const campaignTotal = donationsArray.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-            totalRaised += campaignTotal;
+            totalDonors += Number(donationsResponse.data?.total ?? donationsArray.length);
           } catch (err) {
             console.error(`Error fetching donations for campaign ${campaign.campaign_id}:`, err);
           }
         }
-        setStats(prev => ({ ...prev, totalRaised }));
+        setStats(prev => ({ ...prev, totalRaised, totalDonors }));
       } catch (error) {
         console.error('Error fetching campaigns:', error);
         setCampaigns([]);
@@ -129,7 +134,7 @@ const NGOPage = () => {
                 <Users className="w-8 h-8" />
               </div>
               <div className="text-3xl font-black text-slate-900 mb-1 tracking-tighter">
-                0
+                {stats.totalDonors || 0}
               </div>
               <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Total Donors</p>
             </div>

@@ -39,8 +39,8 @@ const AboutPage = () => {
                 <div className="absolute inset-0 bg-primary/10 mix-blend-multiply" />
               </div>
               <div className="absolute -bottom-6 -left-12 p-8 glass-panel rounded-xl shadow-xl border border-white/20 hidden md:block">
-                <span className="text-4xl font-black text-white block mb-1">$24M+</span>
-                <span className="text-white/80 text-xs font-bold uppercase tracking-widest">
+                <span className="text-4xl font-black text-primary block mb-1">$24M+</span>
+                <span className="text-on-surface-variant text-xs font-bold uppercase tracking-widest">
                   Global Impact Tracked
                 </span>
               </div>
@@ -115,7 +115,7 @@ const AboutPage = () => {
                   </p>
                   <button
                     type="button"
-                    className="bg-white text-primary px-8 py-3 rounded-md font-bold text-sm shadow-xl active:scale-95 transition-transform"
+                    className="inline-flex items-center justify-center bg-white text-primary border-2 border-white px-8 py-3 rounded-md font-bold text-sm shadow-xl hover:bg-primary-fixed active:scale-95 transition-transform"
                   >
                     Explore The Model
                   </button>
@@ -169,7 +169,7 @@ const AboutPage = () => {
                 </p>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 text-primary font-bold hover:underline"
+                  className="inline-flex items-center justify-center gap-2 bg-primary text-white border-2 border-primary px-6 py-3 rounded-md font-bold shadow-lg hover:bg-primary-container hover:border-primary-container active:scale-95 transition-all"
                 >
                   Download Full Report (PDF 14MB)
                   <span className="material-symbols-outlined">download</span>

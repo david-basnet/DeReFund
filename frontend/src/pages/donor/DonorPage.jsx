@@ -7,6 +7,8 @@ import { Heart, TrendingUp, DollarSign, AlertCircle, ArrowRight, MapPin, Calenda
 import { toast } from 'react-hot-toast';
 import { volunteerVerificationAPI } from '../../utils/api';
 
+const DASHBOARD_LIMIT = 1000;
+
 const DonorPage = () => {
   const { user } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
@@ -32,8 +34,8 @@ const DonorPage = () => {
       try {
         const userId = user?.user_id || user?.id || user?.userId;
         const [campaignsResponse, donationsResponse, disastersResponse, pendingResponse] = await Promise.all([
-          campaignAPI.getAll({ status: 'LIVE' }),
-          user ? donationAPI.getMyDonations().catch(() => ({ data: { donations: [] } })) : Promise.resolve({ data: { donations: [] } }),
+          campaignAPI.getAll({ status: 'LIVE', limit: DASHBOARD_LIMIT }),
+          user ? donationAPI.getMyDonations({ limit: DASHBOARD_LIMIT }).catch(() => ({ data: { donations: [] } })) : Promise.resolve({ data: { donations: [] } }),
           userId ? disasterAPI.getMyDisasters(userId, { limit: 12 }) : Promise.resolve({ data: { disasters: [] } }),
           volunteerVerificationAPI.getPendingCampaigns({ limit: 6 }),
         ]);

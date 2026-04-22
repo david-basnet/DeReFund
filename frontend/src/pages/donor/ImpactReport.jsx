@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import DonorLayout from '../../components/DonorLayout';
 import { Target, DollarSign, TrendingUp, Award, Download, Calendar, Loader2, Heart, CheckCircle2, ArrowRight } from 'lucide-react';
 
+const IMPACT_LIMIT = 1000;
+
 const ImpactReport = () => {
   const { user } = useAuth();
   const [donations, setDonations] = useState([]);
@@ -25,7 +27,7 @@ const ImpactReport = () => {
       
       try {
         setLoading(true);
-        const response = await donationAPI.getMyDonations();
+        const response = await donationAPI.getMyDonations({ limit: IMPACT_LIMIT });
         // Handle different response structures: response.data.donations, response.data, or response
         const donationsData = response.data?.donations || response.data || response.donations || response || [];
         // Ensure it's always an array

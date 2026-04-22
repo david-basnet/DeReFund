@@ -9,6 +9,8 @@ import {
   AlertCircle, CheckCircle2, Clock, BarChart3, Wallet
 } from 'lucide-react';
 
+const DASHBOARD_LIMIT = 1000;
+
 const NGODashboard = () => {
   const { user } = useAuth();
   const { address, isConnected } = useAccount();
@@ -107,24 +109,26 @@ const NGODashboard = () => {
       const userId = user?.user_id || user?.id;
 
       // Fetch campaigns
-      const campaignsResponse = await campaignAPI.getAll({ ngo_id: userId });
+      const campaignsResponse = await campaignAPI.getAll({ ngo_id: userId, limit: DASHBOARD_LIMIT });
       const campaignsData = Array.isArray(campaignsResponse.data?.campaigns) 
         ? campaignsResponse.data.campaigns 
         : [];
 
       // Calculate stats
-      let totalRaised = 0;
       let totalDonations = 0;
+      const totalRaised = campaignsData.reduce(
+        (sum, campaign) => sum + parseFloat(campaign.current_amount || 0),
+        0
+      );
       const liveCampaigns = campaignsData.filter(c => c.status === 'LIVE').length;
 
       for (const campaign of campaignsData) {
         try {
-          const donationsResponse = await donationAPI.getByCampaign(campaign.campaign_id);
+          const donationsResponse = await donationAPI.getByCampaign(campaign.campaign_id, { limit: 1 });
           const donations = Array.isArray(donationsResponse.data?.donations) 
             ? donationsResponse.data.donations 
             : [];
-          totalDonations += donations.length;
-          totalRaised += donations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+          totalDonations += Number(donationsResponse.data?.total ?? donations.length);
         } catch (err) {
           console.error(`Error fetching donations for campaign ${campaign.campaign_id}:`, err);
         }

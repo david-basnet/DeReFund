@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import NGOLayout from '../../components/NGOLayout';
 import { BarChart3, TrendingUp, DollarSign, Users, Activity, CheckCircle2 } from 'lucide-react';
 
+const ANALYTICS_LIMIT = 1000;
+
 const NGOAnalytics = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState({
@@ -23,18 +25,21 @@ const NGOAnalytics = () => {
 
     try {
       // Don't set loading to true - show data immediately as it loads
-      const campaignsResponse = await campaignAPI.getAll({ ngo_id: userId });
+      const campaignsResponse = await campaignAPI.getAll({ ngo_id: userId, limit: ANALYTICS_LIMIT });
       const campaigns = Array.isArray(campaignsResponse.data?.campaigns) 
         ? campaignsResponse.data.campaigns 
         : [];
 
       let allDonations = [];
-      let totalRaised = 0;
+      const totalRaised = campaigns.reduce(
+        (sum, campaign) => sum + parseFloat(campaign.current_amount || 0),
+        0
+      );
       const donationsByDate = {};
 
       for (const campaign of campaigns) {
         try {
-          const donationsResponse = await donationAPI.getByCampaign(campaign.campaign_id);
+          const donationsResponse = await donationAPI.getByCampaign(campaign.campaign_id, { limit: ANALYTICS_LIMIT });
           const donations = Array.isArray(donationsResponse.data?.donations) 
             ? donationsResponse.data.donations 
             : [];
@@ -43,7 +48,6 @@ const NGOAnalytics = () => {
           
           donations.forEach(donation => {
             const amount = parseFloat(donation.amount || 0);
-            totalRaised += amount;
             
             // Group by date for chart
             const date = new Date(donation.created_at || donation.donated_at).toLocaleDateString();
@@ -64,11 +68,11 @@ const NGOAnalytics = () => {
       const campaignPerformanceData = await Promise.all(
         campaigns.map(async (campaign) => {
           try {
-            const donationsResponse = await donationAPI.getByCampaign(campaign.campaign_id);
-            const donations = Array.isArray(donationsResponse.data?.donations) 
-              ? donationsResponse.data.donations 
+            const donationsResponse = await donationAPI.getByCampaign(campaign.campaign_id, { limit: 1 });
+            const donations = Array.isArray(donationsResponse.data?.donations)
+              ? donationsResponse.data.donations
               : [];
-            const raised = donations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+            const raised = parseFloat(campaign.current_amount || 0);
             const progress = campaign.target_amount > 0 ? (raised / campaign.target_amount) * 100 : 0;
             
             return {
@@ -77,15 +81,17 @@ const NGOAnalytics = () => {
               raised,
               target: campaign.target_amount,
               progress,
-              donations: donations.length,
+              donations: Number(donationsResponse.data?.total ?? donations.length),
             };
           } catch {
             return {
               id: campaign.campaign_id,
               title: campaign.title,
-              raised: 0,
+              raised: parseFloat(campaign.current_amount || 0),
               target: campaign.target_amount,
-              progress: 0,
+              progress: campaign.target_amount > 0
+                ? (parseFloat(campaign.current_amount || 0) / campaign.target_amount) * 100
+                : 0,
               donations: 0,
             };
           }

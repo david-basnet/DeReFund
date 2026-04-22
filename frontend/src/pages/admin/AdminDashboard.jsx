@@ -79,7 +79,6 @@ const AdminDashboard = () => {
       bgColor: 'bg-slate-50',
       iconColor: 'text-slate-600',
       link: '/admin/users',
-      trend: '+12%',
     },
     {
       title: 'Total Raised',
@@ -93,7 +92,6 @@ const AdminDashboard = () => {
       bgColor: 'bg-emerald-50',
       iconColor: 'text-emerald-600',
       link: '/admin/logs',
-      trend: '+8.2%',
     },
     {
       title: 'Active Campaigns',
@@ -103,7 +101,6 @@ const AdminDashboard = () => {
       bgColor: 'bg-primary-fixed/50',
       iconColor: 'text-primary',
       link: '/admin/campaigns',
-      trend: '+5',
     },
     {
       title: 'Verified NGOs',
@@ -113,7 +110,6 @@ const AdminDashboard = () => {
       bgColor: 'bg-violet-50',
       iconColor: 'text-violet-600',
       link: '/admin/users',
-      trend: '+3',
     },
   ];
 
@@ -185,9 +181,9 @@ const AdminDashboard = () => {
                     <div className={`p-3 rounded-lg ${stat.bgColor}`}>
                       <Icon className={`w-6 h-6 ${stat.iconColor}`} />
                     </div>
-                    <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                      <ArrowUpRight className="w-3 h-3" />
-                      {stat.trend}
+                    <div className="flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                      Live
                     </div>
                   </div>
                   <div className="mb-2">

@@ -4,6 +4,8 @@ import { donationAPI } from '../../utils/api';
 import NGOLayout from '../../components/NGOLayout';
 import { DollarSign, Search, Download, ArrowUpRight, Wallet, Calendar, User, TrendingUp } from 'lucide-react';
 
+const DONATIONS_LIMIT = 1000;
+
 const NGODonations = () => {
   const { user } = useAuth();
   const [donations, setDonations] = useState([]);
@@ -20,7 +22,7 @@ const NGODonations = () => {
     const fetchDonations = async () => {
       try {
         setLoading(true);
-        const response = await donationAPI.getByNgo();
+        const response = await donationAPI.getByNgo({ limit: DONATIONS_LIMIT });
         const data = response.data?.donations || response.data || [];
         const donationsArray = Array.isArray(data) ? data : [];
         setDonations(donationsArray);

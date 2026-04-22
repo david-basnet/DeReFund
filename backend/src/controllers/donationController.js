@@ -1,7 +1,13 @@
 const { eq } = require('drizzle-orm');
 const { db } = require('../db/client');
 const { donations, campaigns } = require('../db/schema');
-const { getDonationById, getDonationsByCampaign, getDonationsByDonor, getAllDonations } = require('../services/donationService');
+const {
+  getDonationById,
+  getDonationsByCampaign,
+  getDonationsByDonor,
+  getDonationsByNgo,
+  getAllDonations,
+} = require('../services/donationService');
 const { formatResponse } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -142,10 +148,22 @@ const getByDonor = async (req, res, next) => {
   }
 };
 
+const getByNgo = async (req, res, next) => {
+  try {
+    const ngoId = req.user.userId;
+    const { page = 1, limit = 50 } = req.query;
+    const result = await getDonationsByNgo(ngoId, parseInt(page, 10), parseInt(limit, 10));
+    res.json(formatResponse(true, 'NGO donations retrieved successfully', result));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   create,
   getById,
   getByCampaign,
   getByDonor,
+  getByNgo,
   getAll,
 };

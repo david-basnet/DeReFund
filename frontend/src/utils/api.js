@@ -174,6 +174,10 @@ export const donationAPI = {
     const queryString = new URLSearchParams(params).toString();
     return apiCall(`/donations/my-donations${queryString ? `?${queryString}` : ''}`);
   },
+  getByNgo: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiCall(`/donations/ngo${queryString ? `?${queryString}` : ''}`);
+  },
   getById: (donationId) => apiCall(`/donations/${donationId}`),
 };
 
