@@ -116,6 +116,25 @@ async function addEscrowMilestone({ contractAddress, title, amount }) {
   };
 }
 
+async function getEscrowMilestoneTotals({ contractAddress }) {
+  const escrow = getEscrowContract(contractAddress);
+  const [targetWei, totalMilestoneWei, milestoneCount] = await Promise.all([
+    escrow.targetAmount(),
+    escrow.totalMilestoneAmount(),
+    escrow.milestoneCount(),
+  ]);
+
+  return {
+    targetWei,
+    totalMilestoneWei,
+    remainingWei: targetWei > totalMilestoneWei ? targetWei - totalMilestoneWei : 0n,
+    milestoneCount: Number(milestoneCount),
+    targetEth: ethers.formatEther(targetWei),
+    totalMilestoneEth: ethers.formatEther(totalMilestoneWei),
+    remainingEth: ethers.formatEther(targetWei > totalMilestoneWei ? targetWei - totalMilestoneWei : 0n),
+  };
+}
+
 async function approveEscrowMilestone({ contractAddress, escrowMilestoneId }) {
   const escrow = getEscrowContract(contractAddress);
   const tx = await escrow.approveAndRelease(escrowMilestoneId);
@@ -161,6 +180,7 @@ async function getEscrowBalance({ contractAddress }) {
 module.exports = {
   deployCampaignEscrow,
   addEscrowMilestone,
+  getEscrowMilestoneTotals,
   approveEscrowMilestone,
   getEscrowMilestone,
   getEscrowBalance,

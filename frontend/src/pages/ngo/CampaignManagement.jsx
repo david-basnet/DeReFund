@@ -141,6 +141,22 @@ const CampaignManagement = () => {
       setMilestoneError('Amount used must be greater than 0.');
       return;
     }
+    if (description.length < 10) {
+      setMilestoneError('Planned work must be at least 10 characters.');
+      return;
+    }
+
+    const plannedTotal = milestones.reduce((sum, milestone) => sum + Number(milestone.amount_to_release || 0), 0);
+    const remainingMilestoneBudget = Math.max(Number(campaign?.target_amount || 0) - plannedTotal, 0);
+    if (amount > remainingMilestoneBudget) {
+      setMilestoneError(
+        `This milestone exceeds the remaining campaign milestone budget. You can add up to $${remainingMilestoneBudget.toLocaleString(
+          'en-US',
+          { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+        )}.`
+      );
+      return;
+    }
 
     try {
       setCreatingMilestone(true);
@@ -280,6 +296,11 @@ const CampaignManagement = () => {
     ? ((campaign.current_amount || 0) / campaign.target_amount) * 100
     : 0;
   const hasEscrow = Boolean(campaign.contract_address);
+  const plannedMilestoneTotal = milestones.reduce(
+    (sum, milestone) => sum + Number(milestone.amount_to_release || 0),
+    0
+  );
+  const remainingMilestoneBudget = Math.max(Number(campaign.target_amount || 0) - plannedMilestoneTotal, 0);
   const milestoneAmount = Number(milestoneForm.amount_to_release);
   const canCreateMilestone =
     hasEscrow &&
@@ -287,6 +308,7 @@ const CampaignManagement = () => {
     milestoneForm.description.trim().length >= 10 &&
     Number.isFinite(milestoneAmount) &&
     milestoneAmount > 0 &&
+    milestoneAmount <= remainingMilestoneBudget &&
     !creatingMilestone;
 
   const getProofUrl = (milestone) =>
@@ -514,6 +536,9 @@ const CampaignManagement = () => {
                         <p className="text-sm text-slate-600 tracking-tight">
                           Define what work must be proven before this part of the escrow can be released.
                         </p>
+                        <p className="mt-1 text-xs font-bold text-slate-500 tracking-tight">
+                          Planned: ${plannedMilestoneTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${Number(campaign.target_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Remaining: ${remainingMilestoneBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
                       </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -535,6 +560,7 @@ const CampaignManagement = () => {
                         <input
                           type="number"
                           min="0.01"
+                          max={remainingMilestoneBudget || undefined}
                           step="0.01"
                           value={milestoneForm.amount_to_release}
                           onChange={(e) => handleMilestoneInput('amount_to_release', e.target.value)}
@@ -563,7 +589,9 @@ const CampaignManagement = () => {
                     )}
                     {!canCreateMilestone && !creatingMilestone && (
                       <p className="mb-3 text-sm font-semibold text-slate-600 tracking-tight">
-                        Fill the task, release amount, and planned work to add this milestone.
+                        {milestoneAmount > remainingMilestoneBudget
+                          ? `Reduce the release amount to $${remainingMilestoneBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} or less.`
+                          : 'Fill the task, release amount, and planned work to add this milestone.'}
                       </p>
                     )}
                     <button

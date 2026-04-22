@@ -12,12 +12,18 @@ const { getCampaignById } = require('../services/campaignService');
 const { ethers } = require('ethers');
 const {
   addEscrowMilestone,
+  getEscrowMilestoneTotals,
   approveEscrowMilestone,
   getEscrowMilestone,
   getEscrowBalance,
   usdToEthString,
 } = require('../services/escrowService');
 const { formatResponse } = require('../utils/helpers');
+const { AppError } = require('../middleware/errorHandler');
+
+function getEthersRevertReason(error) {
+  return error?.reason || error?.shortMessage || error?.revert?.args?.[0] || error?.message || '';
+}
 
 // Create milestone
 const create = async (req, res, next) => {
@@ -57,6 +63,22 @@ const create = async (req, res, next) => {
       );
     }
 
+    const requestedWei = ethers.parseEther(usdToEthString(amount_to_release));
+    const escrowTotals = await getEscrowMilestoneTotals({ contractAddress: campaign.contract_address });
+    if (escrowTotals.totalMilestoneWei + requestedWei > escrowTotals.targetWei) {
+      const remainingUsd =
+        Number(ethers.formatEther(escrowTotals.remainingWei)) *
+        (target / Number(ethers.formatEther(escrowTotals.targetWei)));
+      return res.status(400).json(
+        formatResponse(
+          false,
+          `Milestones exceed the escrow target. The smart contract has ${escrowTotals.totalMilestoneEth} ETH already reserved for milestones, leaving about $${remainingUsd.toFixed(
+            2
+          )} available at the configured demo rate. Deleted app milestones cannot be removed from the deployed escrow contract.`
+        )
+      );
+    }
+
     const escrowMilestone = await addEscrowMilestone({
       contractAddress: campaign.contract_address,
       title,
@@ -79,6 +101,15 @@ const create = async (req, res, next) => {
       })
     );
   } catch (error) {
+    const reason = getEthersRevertReason(error);
+    if (reason.includes('Milestones exceed target')) {
+      return next(
+        new AppError(
+          'Milestones exceed the escrow target. The deployed smart contract already has milestone amounts reserved up to the campaign target.',
+          400
+        )
+      );
+    }
     next(error);
   }
 };
@@ -262,4 +293,3 @@ module.exports = {
   release,
   getSubmittedForAdmin,
 };
-
