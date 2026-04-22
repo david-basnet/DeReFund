@@ -37,18 +37,6 @@ const env = {
   // JWT
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
-  EMAIL_CODE_TTL_MINUTES: parseInt(process.env.EMAIL_CODE_TTL_MINUTES || '10'),
-
-  // Email
-  SMTP_HOST: process.env.SMTP_HOST || '',
-  SMTP_PORT: parseInt(process.env.SMTP_PORT || '587'),
-  SMTP_SECURE: process.env.SMTP_SECURE === 'true',
-  SMTP_USER: process.env.SMTP_USER || '',
-  SMTP_PASS: process.env.SMTP_PASS || '',
-  MAIL_FROM: process.env.MAIL_FROM || '',
-  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY || '',
-  SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL || '',
-  SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME || 'DeReFund',
   
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
@@ -63,6 +51,16 @@ const env = {
   ESCROW_ADMIN_WALLET: process.env.ESCROW_ADMIN_WALLET || '',
   ESCROW_ETH_USD_RATE: parseFloat(process.env.ESCROW_ETH_USD_RATE || '2500'),
   CONTRACT_ADDRESS: process.env.CONTRACT_ADDRESS || '',
+
+  // SMTP email verification
+  SMTP_HOST: process.env.SMTP_HOST || '',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '587'),
+  SMTP_SECURE: process.env.SMTP_SECURE === 'true',
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'DeReFund',
+  MAIL_FROM: process.env.MAIL_FROM || '',
+  EMAIL_CODE_TTL_MINUTES: parseInt(process.env.EMAIL_CODE_TTL_MINUTES || '10'),
   
   // CORS
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',

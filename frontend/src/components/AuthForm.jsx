@@ -25,21 +25,20 @@ const canRoleOpenPath = (role, path) => {
 };
 
 const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
-  const { login, register, verifyRegistration } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSignUp, setIsSignUp] = useState(initialMode === 'signup');
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [registrationStep, setRegistrationStep] = useState('details');
+  const [registrationCode, setRegistrationCode] = useState('');
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordStep, setForgotPasswordStep] = useState('email');
-  const [resetCode, setResetCode] = useState('');
-  const [resetPasswordData, setResetPasswordData] = useState({
+  const [forgotPasswordData, setForgotPasswordData] = useState({
+    code: '',
     newPassword: '',
     confirmPassword: '',
   });
-  const [isAwaitingRegistrationCode, setIsAwaitingRegistrationCode] = useState(false);
-  const [registrationCode, setRegistrationCode] = useState('');
-  const [pendingRegistrationEmail, setPendingRegistrationEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -85,14 +84,12 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
           emailContact: false,
           acceptTerms: false
         });
+        setRegistrationStep('details');
+        setRegistrationCode('');
       }
       setForgotPasswordEmail('');
       setForgotPasswordStep('email');
-      setResetCode('');
-      setResetPasswordData({ newPassword: '', confirmPassword: '' });
-      setIsAwaitingRegistrationCode(false);
-      setRegistrationCode('');
-      setPendingRegistrationEmail('');
+      setForgotPasswordData({ code: '', newPassword: '', confirmPassword: '' });
 
       if (isForgotPassword) return;
 
@@ -428,8 +425,6 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
 
   const handleSignUpClick = () => {
     setIsSignUp(true);
-    setIsAwaitingRegistrationCode(false);
-    setRegistrationCode('');
     setError('');
     setRegisterData({
       username: '',
@@ -440,12 +435,12 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
       emailContact: false,
       acceptTerms: false
     });
+    setRegistrationStep('details');
+    setRegistrationCode('');
   };
 
   const handleSignInClick = () => {
     setIsSignUp(false);
-    setIsAwaitingRegistrationCode(false);
-    setRegistrationCode('');
     setError('');
   };
 
@@ -533,56 +528,56 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
       setError('You must accept the Terms and Conditions to register');
       return;
     }
+
+    if (registrationStep === 'code') {
+      if (!/^\d{6}$/.test(registrationCode.trim())) {
+        setError('Please enter the 6 digit code sent to your email');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await register({
+          name: registerData.username.trim(),
+          email: registerData.email.trim(),
+          password: registerData.password,
+          role: registerData.role,
+          code: registrationCode.trim(),
+        });
+        toast.success('Email verified. Account created.');
+        onClose();
+
+        const from = location.state?.from?.pathname || sessionStorage.getItem('authRedirectPath');
+        const userRole = response?.data?.user?.role || registerData.role;
+        if (from && canRoleOpenPath(userRole, from)) {
+          sessionStorage.removeItem('authRedirectPath');
+          navigate(from);
+          return;
+        }
+
+        sessionStorage.removeItem('authRedirectPath');
+        navigate(roleHome(userRole));
+      } catch (err) {
+        setError(err.message || 'Could not verify registration code.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     
     setLoading(true);
     try {
-      await register({
+      await authAPI.sendRegistrationCode({
         name: registerData.username.trim(),
         email: registerData.email.trim(),
         password: registerData.password,
         role: registerData.role,
       });
-      setPendingRegistrationEmail(registerData.email.trim());
-      setIsAwaitingRegistrationCode(true);
+      setRegistrationStep('code');
+      setRegistrationCode('');
       toast.success('Verification code sent to your email.');
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegistrationCodeSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!/^\d{6}$/.test(registrationCode.trim())) {
-      setError('Enter the 6 digit verification code');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await verifyRegistration({
-        email: pendingRegistrationEmail,
-        code: registrationCode.trim(),
-      });
-
-      onClose();
-
-      // Check if there's a specific page to return to
-      const from = location.state?.from?.pathname || sessionStorage.getItem('authRedirectPath');
-      const userRole = response?.data?.user?.role || registerData.role;
-      if (from && canRoleOpenPath(userRole, from)) {
-        sessionStorage.removeItem('authRedirectPath');
-        navigate(from);
-        return;
-      }
-
-      sessionStorage.removeItem('authRedirectPath');
-      navigate(roleHome(userRole));
-    } catch (err) {
-      setError(err.message || 'Verification failed. Please check the code.');
+      setError(err.message || 'Could not send registration code.');
     } finally {
       setLoading(false);
     }
@@ -597,36 +592,36 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
         setError('Please provide a valid email address');
         return;
       }
-
       setLoading(true);
       try {
-        await authAPI.requestPasswordReset({ email: forgotPasswordEmail.trim() });
+        await authAPI.forgotPassword({ email: forgotPasswordEmail.trim() });
         setForgotPasswordStep('reset');
+        setForgotPasswordData({ code: '', newPassword: '', confirmPassword: '' });
         toast.success('Password reset code sent to your email.');
       } catch (err) {
-        setError(err.message || 'Could not send reset code.');
+        setError(err.message || 'Could not send password reset code.');
       } finally {
         setLoading(false);
       }
       return;
     }
 
-    if (!/^\d{6}$/.test(resetCode.trim())) {
-      setError('Enter the 6 digit reset code');
+    if (!/^\d{6}$/.test(forgotPasswordData.code.trim())) {
+      setError('Please enter the 6 digit code sent to your email');
       return;
     }
 
-    if (resetPasswordData.newPassword.length < 8) {
+    if (forgotPasswordData.newPassword.length < 8) {
       setError('New password must be at least 8 characters long');
       return;
     }
 
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(resetPasswordData.newPassword)) {
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(forgotPasswordData.newPassword)) {
       setError('New password must contain at least one uppercase letter, one lowercase letter, and one number');
       return;
     }
 
-    if (resetPasswordData.newPassword !== resetPasswordData.confirmPassword) {
+    if (forgotPasswordData.newPassword !== forgotPasswordData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
@@ -635,14 +630,12 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
     try {
       await authAPI.resetPassword({
         email: forgotPasswordEmail.trim(),
-        code: resetCode.trim(),
-        newPassword: resetPasswordData.newPassword,
+        code: forgotPasswordData.code.trim(),
+        newPassword: forgotPasswordData.newPassword,
       });
-      toast.success('Password reset successful. Please sign in.');
-      setIsForgotPassword(false);
-      setForgotPasswordStep('email');
-      setResetCode('');
-      setResetPasswordData({ newPassword: '', confirmPassword: '' });
+      toast.success('Password changed. Please sign in.');
+      setLoginData((prev) => ({ ...prev, email: forgotPasswordEmail.trim(), password: '' }));
+      handleBackToSignIn();
     } catch (err) {
       setError(err.message || 'Could not reset password.');
     } finally {
@@ -657,8 +650,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
     setIsForgotPassword(true);
     setForgotPasswordStep('email');
     setForgotPasswordEmail(loginData.email || '');
-    setResetCode('');
-    setResetPasswordData({ newPassword: '', confirmPassword: '' });
+    setForgotPasswordData({ code: '', newPassword: '', confirmPassword: '' });
     return;
     if (!authContainerRef.current) return;
 
@@ -838,8 +830,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
     setError('');
     setIsForgotPassword(false);
     setForgotPasswordStep('email');
-    setResetCode('');
-    setResetPasswordData({ newPassword: '', confirmPassword: '' });
+    setForgotPasswordData({ newPassword: '', confirmPassword: '' });
     return;
     if (!authContainerRef.current || !signInFormRef.current) return;
 
@@ -1029,40 +1020,13 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
 
         {/* Sign Up Form Container */}
         <div className="form-container sign-up-container" ref={signUpFormRef}>
-          <form onSubmit={isAwaitingRegistrationCode ? handleRegistrationCodeSubmit : handleRegisterSubmit}>
-            <h1>{isAwaitingRegistrationCode ? 'Verify Email' : 'Create Account'}</h1>
-            {isAwaitingRegistrationCode ? (
-              <>
-                <p className="forgot-password-description">
-                  We sent a 6 digit code to {pendingRegistrationEmail}. Enter it to create your account.
-                </p>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength="6"
-                  placeholder="Verification code"
-                  value={registrationCode}
-                  onChange={(e) => setRegistrationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  required
-                />
-                {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
-                <button type="submit" disabled={loading}>
-                  {loading ? 'Verifying...' : 'Verify & Create Account'}
-                </button>
-                <button
-                  type="button"
-                  className="auth-secondary-button"
-                  onClick={() => {
-                    setIsAwaitingRegistrationCode(false);
-                    setRegistrationCode('');
-                    setError('');
-                  }}
-                >
-                  Edit Details
-                </button>
-              </>
-            ) : (
-              <>
+          <form onSubmit={handleRegisterSubmit}>
+            <h1>Create Account</h1>
+            {registrationStep === 'code' && (
+              <p className="forgot-password-description">
+                Enter the 6 digit code sent to {registerData.email}. It expires soon.
+              </p>
+            )}
             
             {/* Role Selection */}
             <div className="role-selection">
@@ -1070,7 +1034,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
               <div className="role-options">
                 <div 
                   className={`role-option-card ${registerData.role === 'DONOR' ? 'selected' : ''}`}
-                  onClick={() => setRegisterData(prev => ({ ...prev, role: 'DONOR' }))}
+                  onClick={() => registrationStep === 'details' && setRegisterData(prev => ({ ...prev, role: 'DONOR' }))}
                 >
                   <div className="role-icon">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1081,7 +1045,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
                 </div>
                 <div 
                   className={`role-option-card ${registerData.role === 'NGO' ? 'selected' : ''}`}
-                  onClick={() => setRegisterData(prev => ({ ...prev, role: 'NGO' }))}
+                  onClick={() => registrationStep === 'details' && setRegisterData(prev => ({ ...prev, role: 'NGO' }))}
                 >
                   <div className="role-icon">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1099,6 +1063,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
               name="username"
               value={registerData.username}
               onChange={handleRegisterChange}
+              disabled={registrationStep === 'code'}
               required
             />
             <input 
@@ -1107,6 +1072,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
               name="email"
               value={registerData.email}
               onChange={handleRegisterChange}
+              disabled={registrationStep === 'code'}
               required
             />
             <div style={{ position: 'relative', width: '100%', margin: '8px 0' }}>
@@ -1116,6 +1082,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
                 name="password"
                 value={registerData.password}
                 onChange={handleRegisterChange}
+                disabled={registrationStep === 'code'}
                 required
                 style={{ 
                   paddingRight: '40px',
@@ -1157,6 +1124,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
                 name="repeatPassword"
                 value={registerData.repeatPassword}
                 onChange={handleRegisterChange}
+                disabled={registrationStep === 'code'}
                 required
                 style={{ 
                   paddingRight: '40px',
@@ -1200,6 +1168,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
                 id="emailContact"
                 checked={registerData.emailContact}
                 onChange={handleRegisterChange}
+                disabled={registrationStep === 'code'}
               />
               <label htmlFor="emailContact">
                 Please contact me via e-mail
@@ -1214,6 +1183,7 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
                 id="acceptTerms"
                 checked={registerData.acceptTerms}
                 onChange={handleRegisterChange}
+                disabled={registrationStep === 'code'}
                 required
               />
               <label htmlFor="acceptTerms">
@@ -1221,12 +1191,36 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
               </label>
             </div>
 
-            {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
-            <button type="submit" disabled={loading}>
-              {loading ? 'Signing Up...' : 'Sign Up'}
-            </button>
+            {registrationStep === 'code' && (
+              <>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="6"
+                  placeholder="Email verification code"
+                  value={registrationCode}
+                  onChange={(e) => setRegistrationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                />
+                <a
+                  href="#"
+                  className="back-to-signin"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setError('');
+                    setRegistrationCode('');
+                    setRegistrationStep('details');
+                  }}
+                  style={{ position: 'relative', zIndex: 1000, pointerEvents: 'auto' }}
+                >
+                  Edit registration details
+                </a>
               </>
             )}
+            {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
+            <button type="submit" disabled={loading}>
+              {loading ? (registrationStep === 'code' ? 'Verifying...' : 'Sending Code...') : registrationStep === 'code' ? 'Verify & Sign Up' : 'Send Code'}
+            </button>
           </form>
         </div>
 
@@ -1268,11 +1262,11 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
         {/* Forgot Password Form Container */}
         <div className="form-container forgot-password-container" ref={forgotPasswordFormRef}>
           <form onSubmit={handleForgotPasswordSubmit}>
-            <h1>{forgotPasswordStep === 'email' ? 'Forgot Password' : 'Reset Password'}</h1>
+            <h1>{forgotPasswordStep === 'email' ? 'Forgot Password' : 'Set New Password'}</h1>
             <p className="forgot-password-description">
               {forgotPasswordStep === 'email'
-                ? "Enter your email address and we'll send you a code to reset your password."
-                : `Enter the code sent to ${forgotPasswordEmail}, then choose your new password.`}
+                ? 'Enter your account email and we will send a reset code.'
+                : `Enter the code sent to ${forgotPasswordEmail}, then set a new password.`}
             </p>
             {forgotPasswordStep === 'email' ? (
               <input 
@@ -1289,34 +1283,44 @@ const AuthForm = ({ isOpen, onClose, initialMode = 'signin' }) => {
                   inputMode="numeric"
                   maxLength="6"
                   placeholder="Reset code"
-                  value={resetCode}
-                  onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  value={forgotPasswordData.code}
+                  onChange={(e) => setForgotPasswordData((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
                   required
                 />
-                <input
-                  type="password"
-                  placeholder="New password"
-                  value={resetPasswordData.newPassword}
-                  onChange={(e) => setResetPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
+                <input 
+                  type="password" 
+                  placeholder="New password" 
+                  value={forgotPasswordData.newPassword}
+                  onChange={(e) => setForgotPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
                   required
                 />
-                <input
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={resetPasswordData.confirmPassword}
-                  onChange={(e) => setResetPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                <input 
+                  type="password" 
+                  placeholder="Confirm new password" 
+                  value={forgotPasswordData.confirmPassword}
+                  onChange={(e) => setForgotPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                   required
                 />
               </>
             )}
             {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
             <button type="submit" disabled={loading}>
-              {loading
-                ? 'Please wait...'
-                : forgotPasswordStep === 'email'
-                  ? 'Send Reset Code'
-                  : 'Confirm New Password'}
+              {loading ? (forgotPasswordStep === 'email' ? 'Sending Code...' : 'Saving...') : forgotPasswordStep === 'email' ? 'Send Code' : 'Verify & Change Password'}
             </button>
+            {forgotPasswordStep === 'reset' && (
+              <a
+                href="#"
+                className="back-to-signin"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setError('');
+                  setForgotPasswordStep('email');
+                }}
+                style={{ position: 'relative', zIndex: 1000, pointerEvents: 'auto' }}
+              >
+                Use a different email
+              </a>
+            )}
             <a 
               href="#" 
               className="back-to-signin" 

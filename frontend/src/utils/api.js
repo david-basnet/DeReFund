@@ -98,14 +98,15 @@ const apiCall = async (endpoint, options = {}) => {
 
 // Auth API
 export const authAPI = {
+  sendRegistrationCode: (userData) => apiCall('/auth/register/send-code', { method: 'POST', body: JSON.stringify(userData) }),
+  verifyRegistrationCode: (userData) => apiCall('/auth/register/verify', { method: 'POST', body: JSON.stringify(userData) }),
   register: (userData) => apiCall('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
-  verifyRegistration: (data) => apiCall('/auth/register/verify', { method: 'POST', body: JSON.stringify(data) }),
   login: (credentials) => apiCall('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
-  requestPasswordReset: (data) => apiCall('/auth/password/forgot', { method: 'POST', body: JSON.stringify(data) }),
-  resetPassword: (data) => apiCall('/auth/password/reset', { method: 'POST', body: JSON.stringify(data) }),
   getProfile: () => apiCall('/auth/me'),
   updateProfile: (updates) => apiCall('/auth/profile', { method: 'PATCH', body: JSON.stringify(updates) }),
   changePassword: (data) => apiCall('/auth/password', { method: 'PATCH', body: JSON.stringify(data) }),
+  forgotPassword: (data) => apiCall('/auth/password/forgot', { method: 'POST', body: JSON.stringify(data) }),
+  resetPassword: (data) => apiCall('/auth/password/reset', { method: 'PATCH', body: JSON.stringify(data) }),
   deleteAccount: (password) => apiCall('/auth/account', { method: 'DELETE', body: JSON.stringify({ password }) }),
 };
 

@@ -3,36 +3,37 @@ const router = express.Router();
 const {
   validateRegister,
   validateLogin,
-  validateRegistrationCode,
-  validateForgotPassword,
-  validateResetPassword,
+  validateRegistrationCodeRequest,
+  validateRegistrationCodeVerify,
+  validatePasswordResetCodeRequest,
+  validatePasswordResetWithCode,
 } = require('../utils/validators');
 const { authenticate } = require('../middleware/auth');
 const {
-  register,
+  sendRegistrationCode,
   verifyRegistrationCode,
+  register,
   login,
-  requestPasswordResetCode,
-  resetPasswordWithCode,
   getProfile,
   getVerificationStatus,
   updateProfile,
   changePassword,
+  sendPasswordResetCode,
+  resetPasswordWithCode,
   deleteAccount,
 } = require('../controllers/authController');
+
+// Send registration email code
+router.post('/register/send-code', validateRegistrationCodeRequest, sendRegistrationCode);
+
+// Verify registration email code and create account
+router.post('/register/verify', validateRegistrationCodeVerify, verifyRegistrationCode);
 
 // Register route
 router.post('/register', validateRegister, register);
 
-// Verify email code and create account
-router.post('/register/verify', validateRegistrationCode, verifyRegistrationCode);
-
 // Login route
 router.post('/login', validateLogin, login);
-
-// Password reset code flow
-router.post('/password/forgot', validateForgotPassword, requestPasswordResetCode);
-router.post('/password/reset', validateResetPassword, resetPasswordWithCode);
 
 // Get current user profile
 router.get('/me', authenticate, getProfile);
@@ -45,6 +46,12 @@ router.patch('/profile', authenticate, updateProfile);
 
 // Change password
 router.patch('/password', authenticate, changePassword);
+
+// Send password reset email code
+router.post('/password/forgot', validatePasswordResetCodeRequest, sendPasswordResetCode);
+
+// Verify reset code and set new password
+router.patch('/password/reset', validatePasswordResetWithCode, resetPasswordWithCode);
 
 // Delete account
 router.delete('/account', authenticate, deleteAccount);

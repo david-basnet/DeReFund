@@ -10,40 +10,110 @@ const {
 const { hashPassword, comparePassword, generateToken, formatResponse } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 const notificationService = require('../services/notificationService');
-const {
-  createEmailAuthCode,
-  getActiveEmailAuthCode,
-  consumeEmailAuthCode,
-} = require('../services/emailAuthCodeService');
+const { PURPOSES, createEmailCode, verifyEmailCode } = require('../services/emailAuthCodeService');
 const { sendAuthCodeEmail } = require('../services/mailService');
-const { env } = require('../config/env');
-const crypto = require('crypto');
 
 const isValidWalletAddress = (value) => !value || /^0x[a-fA-F0-9]{40}$/.test(value);
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
-const generateEmailCode = () => String(crypto.randomInt(100000, 1000000));
-const hashEmailCode = (email, purpose, code) =>
-  crypto.createHash('sha256').update(`${normalizeEmail(email)}:${purpose}:${code}`).digest('hex');
 
-const authCodeResponseData = (mailResult) => {
-  if (env.NODE_ENV !== 'development' || !mailResult?.devCode) return null;
-  return { dev_code: mailResult.devCode };
-};
+const buildUserResponse = (user) => ({
+  user_id: user.user_id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  wallet_address: user.wallet_address,
+});
 
-const issueEmailCode = async ({ email, purpose, payload }) => {
-  const normalizedEmail = normalizeEmail(email);
-  const code = generateEmailCode();
-  const expiresAt = new Date(Date.now() + env.EMAIL_CODE_TTL_MINUTES * 60 * 1000);
-
-  await createEmailAuthCode({
-    email: normalizedEmail,
-    purpose,
-    code_hash: hashEmailCode(normalizedEmail, purpose, code),
-    payload,
-    expires_at: expiresAt,
+const createUserSession = (user) => {
+  const token = generateToken({
+    userId: user.user_id,
+    email: user.email,
+    role: user.role
   });
 
-  return sendAuthCodeEmail({ to: normalizedEmail, code, purpose });
+  return {
+    user: buildUserResponse(user),
+    token
+  };
+};
+
+const createRegistrationPayload = (body) => ({
+  name: String(body.name || '').trim(),
+  email: normalizeEmail(body.email),
+  password: body.password,
+  role: body.role || 'DONOR',
+  wallet_address: body.wallet_address ? String(body.wallet_address).trim() : '',
+});
+
+const sendRegistrationCode = async (req, res, next) => {
+  try {
+    const payload = createRegistrationPayload(req.body);
+
+    if (!isValidWalletAddress(payload.wallet_address)) {
+      return res.status(400).json(formatResponse(false, 'Wallet address must be a valid 0x Ethereum address'));
+    }
+
+    const existingUser = await getUserByEmail(payload.email);
+    if (existingUser) {
+      return res.status(409).json(formatResponse(false, 'User with this email already exists'));
+    }
+
+    const { code } = await createEmailCode({
+      email: payload.email,
+      purpose: PURPOSES.REGISTER,
+      payload,
+    });
+
+    await sendAuthCodeEmail({
+      to: payload.email,
+      code,
+      purpose: PURPOSES.REGISTER,
+    });
+
+    res.json(formatResponse(true, 'Verification code sent to your email'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyRegistrationCode = async (req, res, next) => {
+  try {
+    const payload = createRegistrationPayload(req.body);
+
+    if (!isValidWalletAddress(payload.wallet_address)) {
+      return res.status(400).json(formatResponse(false, 'Wallet address must be a valid 0x Ethereum address'));
+    }
+
+    const existingUser = await getUserByEmail(payload.email);
+    if (existingUser) {
+      return res.status(409).json(formatResponse(false, 'User with this email already exists'));
+    }
+
+    const verification = await verifyEmailCode({
+      email: payload.email,
+      purpose: PURPOSES.REGISTER,
+      code: req.body.code,
+      consume: true,
+    });
+
+    if (!verification.valid) {
+      return res.status(400).json(formatResponse(false, verification.message));
+    }
+
+    const savedPayload = verification.payload || payload;
+    const password_hash = await hashPassword(savedPayload.password);
+    const user = await createUser({
+      name: savedPayload.name,
+      email: normalizeEmail(savedPayload.email),
+      password_hash,
+      role: savedPayload.role || 'DONOR',
+      wallet_address: savedPayload.wallet_address || null,
+    });
+
+    res.status(201).json(formatResponse(true, 'Email verified and user registered successfully', createUserSession(user)));
+  } catch (error) {
+    next(error);
+  }
 };
 
 // Register user
@@ -75,103 +145,9 @@ const register = async (req, res, next) => {
       wallet_address: cleanedWalletAddress || null
     };
 
-    const mailResult = await issueEmailCode({
-      email: normalizedEmail,
-      purpose: 'REGISTER',
-      payload: userData,
-    });
+    const user = await createUser(userData);
 
-    res.status(200).json(formatResponse(true, 'Verification code sent to your email', {
-      email: normalizedEmail,
-      requires_verification: true,
-      ...authCodeResponseData(mailResult),
-    }));
-  } catch (error) {
-    next(error);
-  }
-};
-
-const verifyRegistrationCode = async (req, res, next) => {
-  try {
-    const { email, code } = req.body;
-    const normalizedEmail = normalizeEmail(email);
-    const existingUser = await getUserByEmail(normalizedEmail);
-    if (existingUser) {
-      return res.status(409).json(formatResponse(false, 'User with this email already exists'));
-    }
-
-    const authCode = await getActiveEmailAuthCode(normalizedEmail, 'REGISTER');
-    if (!authCode || authCode.code_hash !== hashEmailCode(normalizedEmail, 'REGISTER', code)) {
-      return res.status(400).json(formatResponse(false, 'Invalid or expired verification code'));
-    }
-
-    const user = await createUser(authCode.payload);
-    await consumeEmailAuthCode(authCode.auth_code_id);
-
-    const token = generateToken({
-      userId: user.user_id,
-      email: user.email,
-      role: user.role
-    });
-
-    res.status(201).json(formatResponse(true, 'Account verified and created successfully', {
-      user: {
-        user_id: user.user_id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        wallet_address: user.wallet_address
-      },
-      token
-    }));
-  } catch (error) {
-    next(error);
-  }
-};
-
-const requestPasswordResetCode = async (req, res, next) => {
-  try {
-    const normalizedEmail = normalizeEmail(req.body.email);
-    const user = await getUserByEmail(normalizedEmail);
-
-    if (user) {
-      const mailResult = await issueEmailCode({
-        email: normalizedEmail,
-        purpose: 'PASSWORD_RESET',
-        payload: { user_id: user.user_id },
-      });
-
-      return res.json(formatResponse(true, 'Password reset code sent to your email', {
-        email: normalizedEmail,
-        ...authCodeResponseData(mailResult),
-      }));
-    }
-
-    res.json(formatResponse(true, 'If this email exists, a password reset code has been sent'));
-  } catch (error) {
-    next(error);
-  }
-};
-
-const resetPasswordWithCode = async (req, res, next) => {
-  try {
-    const { email, code, newPassword } = req.body;
-    const normalizedEmail = normalizeEmail(email);
-    const user = await getUserByEmail(normalizedEmail);
-    if (!user) {
-      return res.status(400).json(formatResponse(false, 'Invalid or expired reset code'));
-    }
-
-    const authCode = await getActiveEmailAuthCode(normalizedEmail, 'PASSWORD_RESET');
-    if (!authCode || authCode.code_hash !== hashEmailCode(normalizedEmail, 'PASSWORD_RESET', code)) {
-      return res.status(400).json(formatResponse(false, 'Invalid or expired reset code'));
-    }
-
-    const password_hash = await hashPassword(newPassword);
-    await updateUser(user.user_id, { password_hash });
-    await consumeEmailAuthCode(authCode.auth_code_id);
-
-    res.json(formatResponse(true, 'Password reset successfully. You can sign in now.'));
+    res.status(201).json(formatResponse(true, 'User registered successfully', createUserSession(user)));
   } catch (error) {
     next(error);
   }
@@ -337,6 +313,61 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+const sendPasswordResetCode = async (req, res, next) => {
+  try {
+    const normalizedEmail = normalizeEmail(req.body.email);
+    const user = await getUserByEmail(normalizedEmail);
+    if (!user) {
+      return res.status(404).json(formatResponse(false, 'No account found with this email'));
+    }
+
+    const { code } = await createEmailCode({
+      email: normalizedEmail,
+      purpose: PURPOSES.PASSWORD_RESET,
+    });
+
+    await sendAuthCodeEmail({
+      to: normalizedEmail,
+      code,
+      purpose: PURPOSES.PASSWORD_RESET,
+    });
+
+    res.json(formatResponse(true, 'Password reset code sent to your email'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetPasswordWithCode = async (req, res, next) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    const verification = await verifyEmailCode({
+      email: normalizedEmail,
+      purpose: PURPOSES.PASSWORD_RESET,
+      code,
+      consume: true,
+    });
+
+    if (!verification.valid) {
+      return res.status(400).json(formatResponse(false, verification.message));
+    }
+
+    const user = await getUserByEmail(normalizedEmail);
+    if (!user) {
+      return res.status(404).json(formatResponse(false, 'No account found with this email'));
+    }
+
+    const password_hash = await hashPassword(newPassword);
+    await updateUser(user.user_id, { password_hash });
+
+    res.json(formatResponse(true, 'Password reset successfully. You can sign in now.'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Delete account
 const deleteAccount = async (req, res, next) => {
   try {
@@ -369,14 +400,15 @@ const deleteAccount = async (req, res, next) => {
 };
 
 module.exports = {
-  register,
+  sendRegistrationCode,
   verifyRegistrationCode,
+  register,
   login,
-  requestPasswordResetCode,
-  resetPasswordWithCode,
   getProfile,
   getVerificationStatus,
   updateProfile,
   changePassword,
+  sendPasswordResetCode,
+  resetPasswordWithCode,
   deleteAccount
 };

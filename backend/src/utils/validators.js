@@ -46,7 +46,30 @@ const validateLogin = [
   handleValidationErrors
 ];
 
-const validateRegistrationCode = [
+const validateRegistrationCodeRequest = [
+  ...validateRegister.slice(0, -1),
+  handleValidationErrors
+];
+
+const validateRegistrationCodeVerify = [
+  ...validateRegister.slice(0, -1),
+  body('code')
+    .trim()
+    .isLength({ min: 6, max: 6 })
+    .isNumeric()
+    .withMessage('Verification code must be 6 digits'),
+  handleValidationErrors
+];
+
+const validatePasswordResetCodeRequest = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email'),
+  handleValidationErrors
+];
+
+const validatePasswordResetWithCode = [
   body('email')
     .isEmail()
     .normalizeEmail()
@@ -56,27 +79,6 @@ const validateRegistrationCode = [
     .isLength({ min: 6, max: 6 })
     .isNumeric()
     .withMessage('Verification code must be 6 digits'),
-  handleValidationErrors
-];
-
-const validateForgotPassword = [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  handleValidationErrors
-];
-
-const validateResetPassword = [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  body('code')
-    .trim()
-    .isLength({ min: 6, max: 6 })
-    .isNumeric()
-    .withMessage('Reset code must be 6 digits'),
   body('newPassword')
     .isLength({ min: 8 })
     .withMessage('New password must be at least 8 characters')
@@ -227,9 +229,10 @@ module.exports = {
   handleValidationErrors,
   validateRegister,
   validateLogin,
-  validateRegistrationCode,
-  validateForgotPassword,
-  validateResetPassword,
+  validateRegistrationCodeRequest,
+  validateRegistrationCodeVerify,
+  validatePasswordResetCodeRequest,
+  validatePasswordResetWithCode,
   validateCampaign,
   validateDonorCampaign,
   validateNgoCampaignDecision,
