@@ -141,6 +141,39 @@ const getByCampaign = async (req, res, next) => {
   }
 };
 
+const getEscrowBudget = async (req, res, next) => {
+  try {
+    const { campaignId } = req.params;
+    const campaign = await getCampaignById(campaignId);
+    if (!campaign) {
+      return res.status(404).json(formatResponse(false, 'Campaign not found'));
+    }
+    if (!campaign.contract_address) {
+      return res.status(400).json(formatResponse(false, 'This campaign does not have an escrow contract'));
+    }
+
+    const totals = await getEscrowMilestoneTotals({ contractAddress: campaign.contract_address });
+    const targetUsd = Number(campaign.target_amount || 0);
+    const targetEth = Number(ethers.formatEther(totals.targetWei));
+    const usdPerEth = targetEth > 0 ? targetUsd / targetEth : 0;
+
+    res.json(
+      formatResponse(true, 'Escrow milestone budget retrieved successfully', {
+        contract_address: campaign.contract_address,
+        milestone_count: totals.milestoneCount,
+        target_eth: totals.targetEth,
+        reserved_eth: totals.totalMilestoneEth,
+        remaining_eth: totals.remainingEth,
+        target_usd: targetUsd,
+        reserved_usd: Number(ethers.formatEther(totals.totalMilestoneWei)) * usdPerEth,
+        remaining_usd: Number(ethers.formatEther(totals.remainingWei)) * usdPerEth,
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Update milestone status
 const updateStatus = async (req, res, next) => {
   try {
@@ -287,6 +320,7 @@ module.exports = {
   create,
   getById,
   getByCampaign,
+  getEscrowBudget,
   updateStatus,
   submitProof,
   remove,

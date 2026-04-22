@@ -18,6 +18,7 @@ const CampaignManagement = () => {
   const [campaign, setCampaign] = useState(null);
   const [donations, setDonations] = useState([]);
   const [milestones, setMilestones] = useState([]);
+  const [escrowBudget, setEscrowBudget] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [creatingMilestone, setCreatingMilestone] = useState(false);
@@ -73,11 +74,20 @@ const CampaignManagement = () => {
           milestonesData.milestones ||
           [];
         setMilestones(Array.isArray(milestonesPayload) ? milestonesPayload : []);
+
+        const hasContract = Boolean(campaignPayload?.contract_address);
+        if (hasContract) {
+          const budgetData = await milestoneAPI.getEscrowBudget(campaignId).catch(() => null);
+          setEscrowBudget(budgetData?.data || null);
+        } else {
+          setEscrowBudget(null);
+        }
       } catch (error) {
         console.error('Error fetching campaign data:', error);
         setCampaign(null);
         setDonations([]);
         setMilestones([]);
+        setEscrowBudget(null);
       } finally {
         setLoading(false);
       }
@@ -89,7 +99,10 @@ const CampaignManagement = () => {
   }, [campaignId]);
 
   const refreshMilestones = async () => {
-    const milestonesData = await milestoneAPI.getByCampaign(campaignId);
+    const [milestonesData, budgetData] = await Promise.all([
+      milestoneAPI.getByCampaign(campaignId),
+      campaign?.contract_address ? milestoneAPI.getEscrowBudget(campaignId).catch(() => null) : Promise.resolve(null),
+    ]);
     const milestonesPayload =
       milestonesData.data?.milestones ||
       milestonesData.data?.data?.milestones ||
@@ -97,6 +110,7 @@ const CampaignManagement = () => {
       milestonesData.milestones ||
       [];
     setMilestones(Array.isArray(milestonesPayload) ? milestonesPayload : []);
+    setEscrowBudget(budgetData?.data || null);
   };
 
   const handleMilestoneInput = (field, value) => {
@@ -148,9 +162,12 @@ const CampaignManagement = () => {
 
     const plannedTotal = milestones.reduce((sum, milestone) => sum + Number(milestone.amount_to_release || 0), 0);
     const remainingMilestoneBudget = Math.max(Number(campaign?.target_amount || 0) - plannedTotal, 0);
-    if (amount > remainingMilestoneBudget) {
+    const effectiveRemainingBudget = escrowBudget
+      ? Math.min(remainingMilestoneBudget, Number(escrowBudget.remaining_usd || 0))
+      : remainingMilestoneBudget;
+    if (amount > effectiveRemainingBudget) {
       setMilestoneError(
-        `This milestone exceeds the remaining campaign milestone budget. You can add up to $${remainingMilestoneBudget.toLocaleString(
+        `This milestone exceeds the remaining escrow milestone budget. You can add up to $${effectiveRemainingBudget.toLocaleString(
           'en-US',
           { minimumFractionDigits: 2, maximumFractionDigits: 2 }
         )}.`
@@ -301,6 +318,9 @@ const CampaignManagement = () => {
     0
   );
   const remainingMilestoneBudget = Math.max(Number(campaign.target_amount || 0) - plannedMilestoneTotal, 0);
+  const onChainRemainingBudget = escrowBudget ? Number(escrowBudget.remaining_usd || 0) : null;
+  const effectiveRemainingBudget =
+    onChainRemainingBudget === null ? remainingMilestoneBudget : Math.min(remainingMilestoneBudget, onChainRemainingBudget);
   const milestoneAmount = Number(milestoneForm.amount_to_release);
   const canCreateMilestone =
     hasEscrow &&
@@ -308,7 +328,7 @@ const CampaignManagement = () => {
     milestoneForm.description.trim().length >= 10 &&
     Number.isFinite(milestoneAmount) &&
     milestoneAmount > 0 &&
-    milestoneAmount <= remainingMilestoneBudget &&
+    milestoneAmount <= effectiveRemainingBudget &&
     !creatingMilestone;
 
   const getProofUrl = (milestone) =>
@@ -537,8 +557,18 @@ const CampaignManagement = () => {
                           Define what work must be proven before this part of the escrow can be released.
                         </p>
                         <p className="mt-1 text-xs font-bold text-slate-500 tracking-tight">
-                          Planned: ${plannedMilestoneTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${Number(campaign.target_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Remaining: ${remainingMilestoneBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          App planned: ${plannedMilestoneTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${Number(campaign.target_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. App remaining: ${remainingMilestoneBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
+                        {escrowBudget && (
+                          <p className="mt-1 text-xs font-bold text-primary tracking-tight">
+                            Escrow reserved: ${Number(escrowBudget.reserved_usd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({escrowBudget.reserved_eth} ETH). Escrow remaining: ${Number(escrowBudget.remaining_usd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({escrowBudget.remaining_eth} ETH).
+                          </p>
+                        )}
+                        {escrowBudget && Number(escrowBudget.remaining_usd || 0) < remainingMilestoneBudget && (
+                          <p className="mt-1 text-xs font-semibold text-amber-700 tracking-tight">
+                            The escrow has less room than the app list because deleted app milestones remain on-chain.
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -560,7 +590,7 @@ const CampaignManagement = () => {
                         <input
                           type="number"
                           min="0.01"
-                          max={remainingMilestoneBudget || undefined}
+                          max={effectiveRemainingBudget || undefined}
                           step="0.01"
                           value={milestoneForm.amount_to_release}
                           onChange={(e) => handleMilestoneInput('amount_to_release', e.target.value)}
@@ -589,8 +619,8 @@ const CampaignManagement = () => {
                     )}
                     {!canCreateMilestone && !creatingMilestone && (
                       <p className="mb-3 text-sm font-semibold text-slate-600 tracking-tight">
-                        {milestoneAmount > remainingMilestoneBudget
-                          ? `Reduce the release amount to $${remainingMilestoneBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} or less.`
+                        {milestoneAmount > effectiveRemainingBudget
+                          ? `Reduce the release amount to $${effectiveRemainingBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} or less.`
                           : 'Fill the task, release amount, and planned work to add this milestone.'}
                       </p>
                     )}

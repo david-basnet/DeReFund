@@ -184,6 +184,7 @@ export const donationAPI = {
 // Milestone API
 export const milestoneAPI = {
   getByCampaign: (campaignId) => apiCall(`/milestones/campaign/${campaignId}`),
+  getEscrowBudget: (campaignId) => apiCall(`/milestones/campaign/${campaignId}/escrow-budget`),
   getById: (milestoneId) => apiCall(`/milestones/${milestoneId}`),
   create: (milestoneData) => apiCall('/milestones', { method: 'POST', body: JSON.stringify(milestoneData) }),
   submitProof: (milestoneId, data) => apiCall(`/milestones/${milestoneId}/proof`, { method: 'PATCH', body: JSON.stringify(data) }),

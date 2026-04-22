@@ -2,10 +2,21 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, isAdmin } = require('../middleware/auth');
 const { validateMilestone } = require('../utils/validators');
-const { create, getById, getByCampaign, updateStatus, submitProof, remove } = require('../controllers/milestoneController');
+const {
+  create,
+  getById,
+  getByCampaign,
+  getEscrowBudget,
+  updateStatus,
+  submitProof,
+  remove,
+} = require('../controllers/milestoneController');
 
 // Get milestones by campaign (public)
 router.get('/campaign/:campaignId', getByCampaign);
+
+// Get on-chain escrow milestone budget for a campaign
+router.get('/campaign/:campaignId/escrow-budget', authenticate, getEscrowBudget);
 
 // Get milestone by ID (public)
 router.get('/:milestoneId', getById);
