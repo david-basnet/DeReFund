@@ -3,7 +3,7 @@ import { adminAPI } from '../../utils/api';
 import AdminLayout from '../../components/AdminLayout';
 import ConfirmModal from '../../components/ConfirmModal';
 import { toast } from 'react-hot-toast';
-import { Users, ShieldCheck, ShieldX, Search, Filter, Mail, Calendar, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { Users, ShieldCheck, ShieldX, Search, Filter, Mail, Calendar, CheckCircle2, XCircle, Trash2, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const AdminUsers = () => {

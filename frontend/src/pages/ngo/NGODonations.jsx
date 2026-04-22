@@ -50,6 +50,39 @@ const NGODonations = () => {
     return matchesSearch;
   });
 
+  const escapeCsvValue = (value) => {
+    const stringValue = value == null ? '' : String(value);
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  };
+
+  const handleExportCsv = () => {
+    const headers = ['Donor', 'Campaign', 'Amount', 'Date', 'Transaction Hash'];
+    const rows = filteredDonations.map((donation) => [
+      donation.donor_name || 'Anonymous',
+      donation.campaign_title || '',
+      Number(donation.amount || 0).toFixed(2),
+      donation.donated_at || donation.created_at
+        ? new Date(donation.donated_at || donation.created_at).toLocaleDateString('en-US')
+        : '',
+      donation.tx_hash || donation.transaction_hash || '',
+    ]);
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCsvValue).join(','))
+      .join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `ngo-donations-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <NGOLayout>
       <div className="p-6 lg:p-8">
@@ -115,7 +148,12 @@ const NGODonations = () => {
                 className="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none font-bold text-black transition-all"
               />
             </div>
-            <button className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-black hover:bg-slate-800 transition-all shadow-md">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={filteredDonations.length === 0}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-black hover:bg-slate-800 transition-all shadow-md disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+            >
               <Download className="w-5 h-5" />
               Export CSV
             </button>
