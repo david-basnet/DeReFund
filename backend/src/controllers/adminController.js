@@ -6,6 +6,7 @@ const {
 } = require('../services/userService');
 const {
   upsertUserVerificationByAdmin,
+  findUserVerificationByUserId,
   insertAdminLog,
   getAdminLogsPaginated,
   getCampaignByIdRaw,
@@ -23,6 +24,25 @@ const verifyUser = async (req, res, next) => {
 
     if (!['APPROVED', 'REJECTED'].includes(status)) {
       return res.status(400).json(formatResponse(false, 'Status must be APPROVED or REJECTED'));
+    }
+
+    const targetUser = await getUserById(userId);
+    if (!targetUser) {
+      return res.status(404).json(formatResponse(false, 'User not found'));
+    }
+
+    if (targetUser.role !== 'NGO') {
+      return res.status(400).json(formatResponse(false, 'Only NGO accounts can be verified'));
+    }
+
+    const existingVerification = await findUserVerificationByUserId(userId);
+    const hasSubmittedDocument =
+      Boolean(existingVerification?.document_url) ||
+      Boolean(existingVerification?.document_file) ||
+      Boolean(document_url);
+
+    if (status === 'APPROVED' && !hasSubmittedDocument) {
+      return res.status(400).json(formatResponse(false, 'An NGO must submit a verification document before approval'));
     }
 
     const result = await upsertUserVerificationByAdmin({

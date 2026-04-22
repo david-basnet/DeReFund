@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { campaignAPI, donationAPI } from '../../utils/api';
+import { authAPI, campaignAPI, donationAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import NGOLayout from '../../components/NGOLayout';
 import { useAccount } from 'wagmi';
@@ -31,42 +31,25 @@ const NGODashboard = () => {
       const recentUpload = recentUploadTime && (Date.now() - parseInt(recentUploadTime)) < 30000; // 30 seconds
 
       try {
-        const usersResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/users?role=NGO&limit=1000`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        const usersData = await usersResponse.json();
-        if (usersData.success && usersData.data?.users) {
-          const ngoUser = usersData.data.users.find(u => u.user_id === userId);
-          if (ngoUser) {
-            const status = ngoUser.verification_status;
-            if (!status || status === null || status === undefined || status === '') {
-              // Set ACTION_REQUIRED, but don't downgrade if we just uploaded or have recent upload
-              setVerificationStatus(current => {
-                if ((skipIfPending || recentUpload) && current === 'PENDING') {
-                  return current; // Don't downgrade after upload
-                }
-                return 'ACTION_REQUIRED'; // No documents uploaded
-              });
-            } else {
-              // Always update if we got a valid status from backend (PENDING, APPROVED, REJECTED)
-              setVerificationStatus(status);
-              // Update localStorage with the latest status
-              localStorage.setItem('ngo_verification_status', status);
-              // Clear upload timestamp if we got a valid status
-              if (status === 'PENDING' || status === 'APPROVED' || status === 'REJECTED') {
-                localStorage.removeItem('ngo_verification_upload_time');
-              }
-            }
-          } else {
-            // User not found - set ACTION_REQUIRED unless we just uploaded
+        const usersData = await authAPI.getVerificationStatus();
+        if (usersData.success && usersData.data) {
+          const status = usersData.data.verification_status;
+          if (!status || status === null || status === undefined || status === '') {
+            // Set ACTION_REQUIRED, but don't downgrade if we just uploaded or have recent upload
             setVerificationStatus(current => {
               if ((skipIfPending || recentUpload) && current === 'PENDING') {
-                return current;
+                return current; // Don't downgrade after upload
               }
-              return 'ACTION_REQUIRED';
+              return 'ACTION_REQUIRED'; // No documents uploaded
             });
+          } else {
+            // Always update if we got a valid status from backend (PENDING, APPROVED, REJECTED)
+            const normalizedStatus = String(status).toUpperCase().trim();
+            setVerificationStatus(normalizedStatus);
+            // Update localStorage with the latest status
+            localStorage.setItem('ngo_verification_status', normalizedStatus);
+            // Clear upload timestamp if we got a valid status
+            localStorage.removeItem('ngo_verification_upload_time');
           }
         } else {
           // If API call fails, only default to ACTION_REQUIRED if not PENDING

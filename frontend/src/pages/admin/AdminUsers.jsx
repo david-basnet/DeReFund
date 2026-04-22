@@ -195,7 +195,17 @@ const AdminUsers = () => {
                       <tr key={user.user_id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-6 py-4">
                           <div>
-                            <div className="font-bold text-slate-900 tracking-tight">{user.name || 'N/A'}</div>
+                            <div className="flex items-center gap-2 font-bold text-slate-900 tracking-tight">
+                              <span>{user.name || 'N/A'}</span>
+                              {user.role === 'NGO' && user.verification_status === 'APPROVED' && (
+                                <span
+                                  title="Verified NGO"
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                </span>
+                              )}
+                            </div>
                             <div className="text-sm text-slate-600 tracking-tight flex items-center gap-1 mt-1">
                               <Mail className="w-3.5 h-3.5" />
                               {user.email}

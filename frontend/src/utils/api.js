@@ -34,14 +34,24 @@ export const publicAPI = {
   },
 };
 
-// Helper function to get auth token
-const getAuthToken = () => {
-  return localStorage.getItem('token');
+// Browser-session auth storage. The token is cleared when the tab/session ends.
+export const authSession = {
+  getToken: () => sessionStorage.getItem('token'),
+  setToken: (token) => {
+    if (token) {
+      sessionStorage.setItem('token', token);
+    }
+    localStorage.removeItem('token');
+  },
+  clearToken: () => {
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('token');
+  },
 };
 
 // Helper function for API calls
 const apiCall = async (endpoint, options = {}) => {
-  const token = getAuthToken();
+  const token = authSession.getToken();
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -103,6 +113,7 @@ export const authAPI = {
   register: (userData) => apiCall('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
   login: (credentials) => apiCall('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   getProfile: () => apiCall('/auth/me'),
+  getVerificationStatus: () => apiCall('/auth/verification-status'),
   updateProfile: (updates) => apiCall('/auth/profile', { method: 'PATCH', body: JSON.stringify(updates) }),
   changePassword: (data) => apiCall('/auth/password', { method: 'PATCH', body: JSON.stringify(data) }),
   forgotPassword: (data) => apiCall('/auth/password/forgot', { method: 'POST', body: JSON.stringify(data) }),
@@ -225,7 +236,7 @@ export const uploadAPI = {
     return fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/upload/ngo/document`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${authSession.getToken()}`
       },
       body: formData
     }).then(res => res.json());
@@ -233,7 +244,7 @@ export const uploadAPI = {
   getNGODocument: (userId) => {
     return fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/upload/ngo/document/${userId}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${authSession.getToken()}`
       }
     });
   },
@@ -241,7 +252,7 @@ export const uploadAPI = {
     return fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/upload/disaster/images`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${authSession.getToken()}`
       },
       body: formData
     }).then(res => res.json());

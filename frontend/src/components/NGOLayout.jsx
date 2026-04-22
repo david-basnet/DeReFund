@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { notificationAPI } from '../utils/api';
+import { authAPI, notificationAPI } from '../utils/api';
 import { useAccount } from 'wagmi';
 import {
   Home,
@@ -19,6 +19,7 @@ import {
   X,
   Bell,
   Check,
+  CheckCircle2,
   Trash2,
   Wallet,
 } from 'lucide-react';
@@ -140,51 +141,26 @@ const NGOLayout = ({ children }) => {
         const recentUploadTime = localStorage.getItem('ngo_verification_upload_time');
         const recentUpload = recentUploadTime && (Date.now() - parseInt(recentUploadTime)) < 30000; // 30 seconds
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/users?role=NGO&limit=1000`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        const data = await response.json();
-        if (data.success && data.data?.users) {
-          const ngoUser = data.data.users.find(u => u.user_id === user?.user_id || u.user_id === user?.id);
-          if (ngoUser) {
-            // If verification_status exists, documents have been uploaded
-            const status = ngoUser.verification_status;
-            // If status is null, undefined, or empty, it means ACTION_REQUIRED (no documents uploaded)
-            // Only show PENDING if status is explicitly 'PENDING' (meaning documents were uploaded)
-            if (!status || status === null || status === undefined || status === '') {
-              // Set ACTION_REQUIRED, but don't downgrade if we just uploaded or have recent upload
-              setVerificationStatus(current => {
-                if ((skipIfPending || recentUpload) && current === 'PENDING') {
-                  return current; // Don't downgrade after upload
-                }
-                return 'ACTION_REQUIRED'; // No documents uploaded
-              });
-            } else {
-              // Always update if we got a valid status from backend (PENDING, APPROVED, REJECTED)
-              setVerificationStatus(status);
-              // Update localStorage with the latest status
-              localStorage.setItem('ngo_verification_status', status);
-              // Clear upload timestamp if we got a valid status
-              if (status === 'PENDING' || status === 'APPROVED' || status === 'REJECTED') {
-                localStorage.removeItem('ngo_verification_upload_time');
-              }
-              
-              // Show notification if status is REJECTED and we haven't shown it yet for this session
-              if (status === 'REJECTED' && !hasCheckedNotification) {
-                setShowRejectionNotification(true);
-                setHasCheckedNotification(true);
-              }
-            }
-          } else {
-            // New NGO user, no verification record - only set if not PENDING
+        const data = await authAPI.getVerificationStatus();
+        if (data.success && data.data) {
+          const status = data.data.verification_status;
+          if (!status || status === null || status === undefined || status === '') {
             setVerificationStatus(current => {
               if ((skipIfPending || recentUpload) && current === 'PENDING') {
                 return current;
               }
               return 'ACTION_REQUIRED';
             });
+          } else {
+            const normalizedStatus = String(status).toUpperCase().trim();
+            setVerificationStatus(normalizedStatus);
+            localStorage.setItem('ngo_verification_status', normalizedStatus);
+            localStorage.removeItem('ngo_verification_upload_time');
+
+            if (normalizedStatus === 'REJECTED' && !hasCheckedNotification) {
+              setShowRejectionNotification(true);
+              setHasCheckedNotification(true);
+            }
           }
         } else {
           // If API call fails or no users found, only default to ACTION_REQUIRED if not PENDING
@@ -373,8 +349,11 @@ const NGOLayout = ({ children }) => {
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-white truncate tracking-tight">
-                    {user?.name || 'NGO'}
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-white tracking-tight">
+                    <span className="truncate">{user?.name || 'NGO'}</span>
+                    {verificationStatus === 'APPROVED' && (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" aria-label="Verified NGO" />
+                    )}
                   </div>
                   <div className="text-xs font-medium text-white/60 truncate tracking-tight">
                     {user?.email || 'ngo@example.com'}
@@ -420,8 +399,11 @@ const NGOLayout = ({ children }) => {
                 <UserCircle className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-900">
-                  {user?.name || 'NGO'}
+                <p className="flex items-center gap-1.5 truncate text-sm font-semibold text-slate-900">
+                  <span className="truncate">{user?.name || 'NGO'}</span>
+                  {verificationStatus === 'APPROVED' && (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-label="Verified NGO" />
+                  )}
                 </p>
                 <p className="truncate text-xs text-slate-500">
                   {user?.email || 'ngo@example.com'}

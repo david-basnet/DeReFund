@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { campaignAPI, disasterAPI } from '../../utils/api';
+import { authAPI, campaignAPI, disasterAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import NGOLayout from '../../components/NGOLayout';
 import { AlertCircle, FileText, DollarSign, Image as ImageIcon, Globe, Loader2, CheckCircle2, XCircle } from 'lucide-react';
@@ -166,26 +166,7 @@ const CreateCampaign = () => {
   useEffect(() => {
     const fetchVerificationStatus = async () => {
       try {
-        // Use the new endpoint that allows NGOs to check their own status
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/verification-status`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (!response.ok) {
-          console.error('API response not OK:', response.status, response.statusText);
-          // If 403, user might not be authenticated, check localStorage
-          if (response.status === 403 || response.status === 401) {
-            const storedStatus = localStorage.getItem('ngo_verification_status');
-            setVerificationStatus(storedStatus ? storedStatus.toUpperCase() : 'ACTION_REQUIRED');
-            setCheckingVerification(false);
-            return;
-          }
-          throw new Error(`API call failed with status ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const data = await authAPI.getVerificationStatus();
 
         if (data.success && data.data) {
           const status = data.data.verification_status;
@@ -197,20 +178,11 @@ const CreateCampaign = () => {
           setVerificationStatus(finalStatus);
           localStorage.setItem('ngo_verification_status', finalStatus);
         } else {
-          // If API response structure is unexpected, check localStorage
-          console.log('Unexpected API response structure, checking localStorage');
-          const storedStatus = localStorage.getItem('ngo_verification_status');
-          if (storedStatus) {
-            setVerificationStatus(storedStatus.toUpperCase());
-          } else {
-            setVerificationStatus('ACTION_REQUIRED');
-          }
+          setVerificationStatus('ACTION_REQUIRED');
         }
       } catch (error) {
         console.error('Error fetching verification status:', error);
-        // Check localStorage as fallback
-        const storedStatus = localStorage.getItem('ngo_verification_status');
-        setVerificationStatus(storedStatus ? storedStatus.toUpperCase() : 'ACTION_REQUIRED');
+        setVerificationStatus('ACTION_REQUIRED');
       } finally {
         setCheckingVerification(false);
       }
@@ -241,16 +213,9 @@ const CreateCampaign = () => {
   // Check if status is APPROVED (case-insensitive, handle null/undefined)
   const statusUpper = verificationStatus ? String(verificationStatus).toUpperCase().trim() : '';
   const canCreateCampaign = statusUpper === 'APPROVED';
-  
-  const storedStatus = localStorage.getItem('ngo_verification_status');
-  const storedStatusUpper = storedStatus ? String(storedStatus).toUpperCase().trim() : '';
-  const canCreateFromStorage = storedStatusUpper === 'APPROVED';
-
-  // Allow access if either check passes
-  const finalCanCreate = canCreateCampaign || canCreateFromStorage;
 
   // Block access if not verified
-  if (!checkingVerification && !finalCanCreate) {
+  if (!checkingVerification && !canCreateCampaign) {
     return (
       <NGOLayout>
         <div className="p-6 lg:p-8">

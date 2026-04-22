@@ -92,6 +92,9 @@ const getAllUsers = async (page = 1, limit = 10, role = null) => {
       wallet_address: users.wallet_address,
       created_at: users.created_at,
       verification_status: userVerification.status,
+      document_url: userVerification.document_url,
+      document_filename: userVerification.document_filename,
+      document_mimetype: userVerification.document_mimetype,
     })
     .from(users)
     .leftJoin(userVerification, eq(users.user_id, userVerification.user_id));

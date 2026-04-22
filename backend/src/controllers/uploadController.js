@@ -50,6 +50,8 @@ const uploadNGODocument = async (req, res, next) => {
           document_type: document_type || 'REGISTRATION',
           document_url: cloudinaryUrl || '',
           status: 'PENDING',
+          verified_by: null,
+          verified_at: null,
           updated_at: new Date(),
         })
         .where(eq(userVerification.user_id, userId))

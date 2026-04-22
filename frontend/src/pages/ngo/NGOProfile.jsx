@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI, uploadAPI } from '../../utils/api';
 import NGOLayout from '../../components/NGOLayout';
-import { Upload, FileText, X, Wallet } from 'lucide-react';
+import { CheckCircle2, Clock, Upload, FileText, X, Wallet, XCircle } from 'lucide-react';
 import { useAccount } from 'wagmi';
 
 const NGOProfile = () => {
@@ -19,6 +19,7 @@ const NGOProfile = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [selectedFile, setSelectedFile] = useState(null);
   const [documentType, setDocumentType] = useState('REGISTRATION');
+  const [verificationStatus, setVerificationStatus] = useState('ACTION_REQUIRED');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -33,6 +34,57 @@ const NGOProfile = () => {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    const fetchVerificationStatus = async () => {
+      try {
+        const response = await authAPI.getVerificationStatus();
+        const status = response.data?.verification_status;
+        setVerificationStatus(status ? String(status).toUpperCase().trim() : 'ACTION_REQUIRED');
+      } catch (error) {
+        console.error('Error fetching verification status:', error);
+        setVerificationStatus('ACTION_REQUIRED');
+      }
+    };
+
+    if (user?.role === 'NGO') {
+      fetchVerificationStatus();
+    }
+  }, [user]);
+
+  const renderVerificationBadge = () => {
+    const statusMap = {
+      APPROVED: {
+        label: 'Verified NGO',
+        icon: CheckCircle2,
+        className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      },
+      PENDING: {
+        label: 'Pending review',
+        icon: Clock,
+        className: 'bg-amber-100 text-amber-700 border-amber-200',
+      },
+      REJECTED: {
+        label: 'Rejected',
+        icon: XCircle,
+        className: 'bg-red-100 text-red-700 border-red-200',
+      },
+      ACTION_REQUIRED: {
+        label: 'Verification needed',
+        icon: FileText,
+        className: 'bg-slate-100 text-slate-700 border-slate-200',
+      },
+    };
+    const config = statusMap[verificationStatus] || statusMap.ACTION_REQUIRED;
+    const Icon = config.icon;
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold tracking-tight ${config.className}`}>
+        <Icon className="h-3.5 w-3.5" />
+        {config.label}
+      </span>
+    );
+  };
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -89,6 +141,7 @@ const NGOProfile = () => {
         
         // Use status from response if available, otherwise default to PENDING
         const newStatus = response.data?.status || 'PENDING';
+        setVerificationStatus(String(newStatus).toUpperCase().trim());
         // Immediately set status to PENDING - don't refetch yet as DB might not be updated
         // Store in localStorage to persist across navigation
         localStorage.setItem('ngo_verification_status', newStatus);
@@ -136,7 +189,10 @@ const NGOProfile = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Profile Settings</h1>
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <h1 className="text-4xl font-bold text-slate-900 tracking-tight">Profile Settings</h1>
+              {renderVerificationBadge()}
+            </div>
             <p className="text-slate-600 tracking-tight">Manage your organization information and verification documents</p>
           </div>
 

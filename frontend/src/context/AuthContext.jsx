@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../utils/api';
+import { authAPI, authSession } from '../utils/api';
 import { useDisconnect } from 'wagmi';
 import { useAppKit } from '@reown/appkit/react';
 
@@ -24,7 +24,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in
-    const token = localStorage.getItem('token');
+    localStorage.removeItem('token');
+    const token = authSession.getToken();
     if (token) {
       fetchUserProfile();
     } else {
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      localStorage.removeItem('token');
+      authSession.clearToken();
       setUser(null);
     } finally {
       setLoading(false);
@@ -52,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authAPI.login(credentials);
-      localStorage.setItem('token', response.data.token);
+      authSession.setToken(response.data.token);
       
       // Get user from response
       const userData = response.data?.user || response.user || response.data;
@@ -75,7 +76,7 @@ export const AuthProvider = ({ children }) => {
       const response = userData.code
         ? await authAPI.verifyRegistrationCode(userData)
         : await authAPI.register(userData);
-      localStorage.setItem('token', response.data.token);
+      authSession.setToken(response.data.token);
       
       const userFromResponse = response.data?.user || response.user || response.data;
       setUser(userFromResponse);
@@ -93,7 +94,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    authSession.clearToken();
     setUser(null);
     // Terminate wallet connection on logout
     disconnect();

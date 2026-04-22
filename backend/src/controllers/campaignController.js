@@ -214,6 +214,14 @@ const ngoConfirm = async (req, res, next) => {
     if (campaign.ngo_id !== ngoId) {
       return res.status(403).json(formatResponse(false, 'Only the assigned NGO can confirm this campaign'));
     }
+    if (!(await isNgoVerificationApproved(ngoId))) {
+      return res.status(403).json(
+        formatResponse(
+          false,
+          'Your NGO account must be approved before accepting campaign proposals. Please submit verification documents and wait for admin approval.'
+        )
+      );
+    }
 
     if (approved) {
       const updated = await updateCampaign(campaignId, {
